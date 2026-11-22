@@ -2,6 +2,8 @@
  {
   "datum": "2026-11-22",
   "punkter": [
+   "**Ny startsida** med din form, fortsätt-knapp, din nästa turneringsmatch och snabbstart för alla spel. (v0.5.0)",
+   "**Turneringar:** serie eller utslag i X01 eller cricket, med tabell och lottning. Spela dina matcher när du vill – flera kan pågå samtidigt. Henrik skapar turneringarna. (v0.5.0)",
    "**Ingen scroll under spelet:** spelet fyller skärmen på telefon och surfplatta, stående som liggande. Ångra sitter uppe bredvid Avbryt. (v0.4.0)",
    "**Bara dina spel:** du ser bara spel du själv var med i, och statistiken för en kompis visar era gemensamma spel. (v0.4.0)",
    "**Min sida** har fått en egen knapp uppe i menyn. (v0.4.0)",

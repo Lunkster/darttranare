@@ -8,6 +8,10 @@ erDiagram
   spel ||--|{ spel_spelare : har
   spel_spelare ||--o{ runda : "X01-besök"
   spel_spelare ||--o{ pil : "en rad per pil"
+  turnering ||--|{ turnering_deltagare : har
+  turnering ||--|{ turnering_match : schema
+  turnering_match ||--o{ spel : "legs"
+  spelare ||--o{ turnering_deltagare : deltar
   spelare { smallint id PK
     text namn UK "alias, unikt oavsett stora/små bokstäver"
     boolean aktiv
@@ -23,7 +27,27 @@ erDiagram
     text kalla "app eller mdt"
     text anteckning
     timestamptz andrad
-    uuid skapad_av "kontot som sparade spelet först" }
+    uuid skapad_av "kontot som sparade spelet först"
+    uuid turnering_match "leg i en turneringsmatch" }
+  turnering { uuid id PK
+    text namn
+    text format "serie eller utslag"
+    text typ "x01 eller cricket"
+    jsonb installningar "start, forst_till, dubbelmote"
+    timestamptz skapad
+    uuid skapad_av
+    timestamptz avslutad }
+  turnering_deltagare { uuid turnering_id PK
+    smallint spelare_id PK
+    smallint seed }
+  turnering_match { uuid id PK
+    uuid turnering_id
+    smallint runda
+    smallint nr
+    smallint spelare1 "null = vinnaren från fran1"
+    smallint spelare2
+    uuid fran1 "utslag: tidigare match"
+    uuid fran2 }
   spel_spelare { uuid spel_id PK
     smallint spelare_id PK
     smallint ordning
@@ -46,7 +70,8 @@ erDiagram
 
 ## Konton och behörighet (04_konton.sql)
 Var och en har ett eget konto med rollen `dart` i `app_metadata`, kopplat till sin rad i `spelare` (`anvandare`). Spelare utan konto är gäster.
-- **Läsa spel:** bara spel man själv var med i eller har skapat (`ser_spel`, 06_synlighet.sql). Senare även matcher i turneringar man är med i.
+- **Läsa spel:** bara spel man själv var med i eller har skapat (`ser_spel`, 06_synlighet.sql), och legs i turneringar man är med i (07).
+- **Turneringar (07_turneringar.sql):** deltagare med konto (och admin) ser turneringen, schemat och alla dess matcher (`i_turnering`). Bara admin – `app_metadata.dart_admin` – skapar och tar bort (`skapa_turnering`, `ta_bort_turnering`). Matchresultat och tabell räknas i `spel.js` (`matchlagen`, `turneringstabell`) ur vyn `v_turnering_leg` – inget lagras.
 - **Läsa spelare:** alla i gruppen ser spelarlistan (behövs för att välja motståndare).
 - **Spel:** ändras bara via `spara_spel`/`ta_bort_spel` (security definer). De släpper igenom nya spel, spel man själv skapat och spel där man själv är med (`far_andra`). Direkt skrivning i `spel`, `spel_spelare`, `runda` och `pil` är avstängd.
 - **Spelare:** alla får lägga till gäster; en spelare med konto ändras bara av ägaren. Inloggade får bara ändra `namn` och `aktiv` (05_alias.sql) – ingen kan koppla om konton. Ingen tar bort spelare.
@@ -67,6 +92,7 @@ Var och en har ett eget konto med rollen `dart` i `app_metadata`, kopplat till s
 | `v_x01` | Per X01-leg och spelare: poäng, pilar, snitt, första 9, dubbelpilar, checkouts, högsta utgång, 100+/140+/180, kvar |
 | `v_resultat` | Övningar och cricket per spel och spelare: pilar, träffar, marks, rundor, poäng (Bob's 27, JDC, scoring), MPR |
 | `v_mal` | Träff per mål och spelare (dubblar, bull m.m.) |
+| `v_turnering_leg` | Per turneringsmatch och spelare: legs, vunna legs, poäng och pilar (X01), marks och rundor (cricket) |
 
 ## Import från My Dart Training
 `import/mdt.py` läser `.mdt`-backupen (SQLite). Spel får fasta uuid (uuid5 av tabell och id), så en ny backup kan importeras om utan dubbletter. JDC, Bob's 27 och scoring sparar bara antal träffar per mål i backupen – pilarna återskapas, så ordningen inom ett mål är påhittad (summor och träffprocent stämmer). Cricket har bara summor → `spel_spelare.resultat`.

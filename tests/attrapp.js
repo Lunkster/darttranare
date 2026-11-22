@@ -1,15 +1,16 @@
 // Attrapp för Supabase (PostgREST + auth) i minnet – testerna rör aldrig riktiga databasen.
 // Ersätter window.fetch innan appen laddas. Påhittade spelare. Vyerna räknas med samma regler som i SQL.
-import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.4.0';
+import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.5.0';
 
 export const KOD = 'kod123';
 export const EPOST = 'anna@exempel.se';
-const KONTON = { 'anna@exempel.se': { kod: KOD, sub: 'u-anna' }, 'bo@exempel.se': { kod: 'bo456', sub: 'u-bo' } };
+const KONTON = { 'anna@exempel.se': { kod: KOD, sub: 'u-anna', admin: true }, 'bo@exempel.se': { kod: 'bo456', sub: 'u-bo' } };
 export const db = {
   spelare: [{ id: 1, namn: 'Anna', aktiv: true, ordning: 1, anvandare: 'u-anna', mdt_namn: null }, { id: 2, namn: 'Bo', aktiv: true, ordning: 2, anvandare: 'u-bo', mdt_namn: null }],
   // Ett spel som Bo spelat själv – Anna ser det men får inte ta bort det
   spel: [{ id: 'bo-spel-1', typ: 'scoring', installningar: { mal: '20', pilar: 3 }, start: '2026-11-01T18:00:00Z', slut: '2026-11-01T18:05:00Z', match_id: null, kalla: 'app', skapad_av: 'u-bo',
     spelare: [{ spelare_id: 2, ordning: 1, vinnare: false }], rundor: [], pilar: [{ spelare_id: 2, runda: 1, nr: 1, mal: '20', segment: 'T20' }, { spelare_id: 2, runda: 1, nr: 2, mal: '20', segment: 'M' }, { spelare_id: 2, runda: 1, nr: 3, mal: '20', segment: 'S20' }] }],
+  turnering: [], turnering_deltagare: [], turnering_match: [],
   nextId: 3, offline: false, logg: [], inloggad: null,
 };
 // Samma regel som dart.far_andra: nytt spel, eget spel eller spel där man själv är med
@@ -22,7 +23,10 @@ const farAndra = (sid) => {
 
 // Samma regel som dart.ser_spel: spel man skapat eller är med i
 const syns = (s) => s.skapad_av === db.inloggad || s.spelare.some((x) => db.spelare.find((p) => p.id === x.spelare_id)?.anvandare === db.inloggad);
-const synliga = () => db.spel.filter(syns);
+const jagId = () => db.spelare.find((p) => p.anvandare === db.inloggad)?.id;
+const iTurnering = (tid) => db.turnering_deltagare.some((d) => d.turnering_id === tid && d.spelare_id === jagId());
+const synligaTurneringar = () => db.turnering.filter((t) => iTurnering(t.id));
+const synliga = () => db.spel.filter((s) => syns(s) || (s.turnering_match && iTurnering(db.turnering_match.find((m) => m.id === s.turnering_match)?.turnering_id)));
 const v = {
   spelnamn: (id) => db.spelare.find((s) => s.id === id)?.namn,
   x01() {
@@ -50,6 +54,16 @@ const v = {
         poang: ['bobs27', 'jdc', 'scoring'].includes(s.typ) ? sm.poang : null, mpr: s.typ === 'cricket' ? Math.round((cm * 100) / rundor) / 100 : null,
       };
     }));
+  },
+  turneringLeg() {
+    const ut = new Map();
+    synliga().filter((s) => s.turnering_match && s.slut).forEach((s) => s.spelare.forEach((sp) => {
+      const k = `${s.turnering_match}|${sp.spelare_id}`;
+      if (!ut.has(k)) ut.set(k, { turnering_match: s.turnering_match, turnering_id: db.turnering_match.find((m) => m.id === s.turnering_match)?.turnering_id, spelare_id: sp.spelare_id, legs: 0, vunna: 0, poang: 0, pilar: 0, marks: 0, rundor: 0 });
+      const r = ut.get(k); r.legs++; if (sp.vinnare) r.vunna++;
+      s.rundor.filter((x) => x.spelare_id === sp.spelare_id).forEach((x) => { r.poang += x.poang; r.pilar += x.pilar ?? 3; });
+    }));
+    return [...ut.values()];
   },
   mal() {
     const m = new Map();
@@ -88,12 +102,15 @@ window.fetch = async (url, init = {}) => {
     const k = body.refresh_token ? { sub: db.inloggad ?? 'u-anna' } : KONTON[body.email];
     if (!k || (!body.refresh_token && k.kod !== body.password)) return svar({ error: 'bad' }, 400);
     db.inloggad = k.sub;
-    return svar({ access_token: `x.${btoa(JSON.stringify({ sub: k.sub }))}.y`, refresh_token: 'rt', expires_at: Date.now() / 1000 + 3600 });
+    const admin = Object.values(KONTON).find((x) => x.sub === k.sub)?.admin === true;
+    return svar({ access_token: `x.${btoa(JSON.stringify({ sub: k.sub, app_metadata: { roll: 'dart', dart_admin: admin } }))}.y`, refresh_token: 'rt', expires_at: Date.now() / 1000 + 3600 });
   }
   if (h['Accept-Profile'] !== 'dart') return svar({ message: 'fel schema' }, 406);
   const t = u.pathname.replace('/rest/v1/', ''), q = u.searchParams;
   if (m === 'GET') {
-    const kalla = { v_x01: v.x01, v_resultat: v.resultat, v_mal: v.mal }[t]?.() ?? db[t];
+    const kalla = { v_x01: v.x01, v_resultat: v.resultat, v_mal: v.mal, v_turnering_leg: v.turneringLeg,
+      turnering: synligaTurneringar, turnering_deltagare: () => db.turnering_deltagare.filter((d) => iTurnering(d.turnering_id)),
+      turnering_match: () => db.turnering_match.filter((m) => iTurnering(m.turnering_id)) }[t]?.() ?? db[t];
     return kalla ? svar(filtrera(kalla, q)) : svar({ message: `okänd ${t}` }, 404);
   }
   db.logg.push(`${m} ${t}`);
@@ -115,6 +132,20 @@ window.fetch = async (url, init = {}) => {
     if (!farAndra(p.id)) return svar({ message: 'Ingen behörighet att ändra spelet' }, 400);
     p.skapad_av = db.spel.find((s) => s.id === p.id)?.skapad_av ?? db.inloggad;
     db.spel = db.spel.filter((s) => s.id !== p.id); db.spel.push(p); return svar(null, 200);
+  }
+  if (t === 'rpc/skapa_turnering') {
+    if (!Object.values(KONTON).find((x) => x.sub === db.inloggad)?.admin) return svar({ message: 'Bara admin kan skapa turneringar' }, 400);
+    const p = body.p, tid = `t-${db.turnering.length + 1}`;
+    db.turnering.push({ id: tid, namn: p.namn, format: p.format, typ: p.typ, installningar: p.installningar, skapad: new Date().toISOString(), skapad_av: db.inloggad, avslutad: null });
+    p.deltagare.forEach((d) => db.turnering_deltagare.push({ turnering_id: tid, ...d }));
+    p.matcher.forEach((m) => db.turnering_match.push({ turnering_id: tid, spelare1: null, spelare2: null, fran1: null, fran2: null, ...m }));
+    return svar(tid, 200);
+  }
+  if (t === 'rpc/ta_bort_turnering') {
+    db.turnering = db.turnering.filter((x) => x.id !== body.tid);
+    db.turnering_match = db.turnering_match.filter((x) => x.turnering_id !== body.tid);
+    db.turnering_deltagare = db.turnering_deltagare.filter((x) => x.turnering_id !== body.tid);
+    return svar(null, 204);
   }
   if (t === 'rpc/ta_bort_spel') {
     if (!farAndra(body.sid)) return svar({ message: 'Ingen behörighet att ta bort spelet' }, 400);

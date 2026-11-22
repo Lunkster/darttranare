@@ -199,3 +199,50 @@ body.spelar .rundpilar .pil { padding: 0 8px; min-width: 44px; display: inline-b
 /* Övningar och frågor: knapparna längst ner med rimlig höjd, målet tar resten */
 body.spelar .spelyta > .knappar:not(.knappsats):not(.cricketknappar) { flex: 0 1 clamp(110px, 36dvh, 340px); margin-top: auto; }
 body.spelar .malvy { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
+
+/* Meny: fyra flikar och två ikoner ska få plats på en liten telefon */
+@media (max-width: 480px) { .brand { display: none; } .tabs { width: 100%; justify-content: space-between; } .tabs a { padding: 8px 7px; font-size: 14px; } .tabs a.tab-ikon { padding: 8px 6px; } }
+
+/* Startsidan */
+.hero { position: relative; overflow: hidden; border-radius: var(--radie); padding: 18px 16px 16px; margin-bottom: 12px;
+  background: linear-gradient(135deg, #1d4b31 0%, #18211c 55%, #3a1a17 100%); }
+.hero-tavla { position: absolute; right: -40px; top: -30px; width: 190px; opacity: .18; }
+.hero h1 { font-size: 30px; margin: 0 0 6px; position: relative; }
+.hero-dag { margin: 0; color: var(--text-2); font-size: 14px; position: relative; }
+.hero-form { display: flex; gap: 22px; position: relative; flex-wrap: wrap; }
+.hero-form b { font-size: 26px; font-variant-numeric: tabular-nums; }
+.hero-form small { display: block; color: var(--text-2); font-size: 12px; }
+.hero-form .upp { color: var(--gron-2); margin-left: 4px; } .hero-form .ner { color: var(--rod-2); margin-left: 4px; }
+.hemrubrik { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin: 18px 4px 8px; }
+.hemkort { display: block; background: var(--kort); border-radius: var(--radie); padding: 14px 16px; margin-bottom: 10px; text-decoration: none; color: var(--text); border-left: 4px solid var(--gron); }
+.hemkort.fortsatt { border-left-color: var(--guld); background: #262214; }
+.hk-titel { display: block; font-weight: 700; font-size: 18px; }
+.hk-info { display: block; color: var(--text-2); font-size: 14px; margin-top: 2px; }
+.rutor { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ruta { display: flex; flex-direction: column; justify-content: flex-end; min-height: 112px; padding: 12px 14px; border-radius: var(--radie); background: var(--kort); text-decoration: none; color: var(--text); border: 1px solid var(--linje); }
+.ruta:active { transform: scale(0.98); }
+.ruta:nth-child(odd) .ruta-tecken { color: var(--gron-2); } .ruta:nth-child(even) .ruta-tecken { color: var(--rod-2); }
+.ruta-tecken { font-size: 30px; font-weight: 800; line-height: 1.1; margin-bottom: auto; }
+.ruta-namn { font-weight: 700; font-size: 16px; }
+.ruta-text { color: var(--text-3); font-size: 13px; }
+.senaste { padding: 10px 14px; }
+.senrad { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--linje); align-items: baseline; }
+.senrad .muted { font-size: 13px; }
+
+/* Turneringar */
+.rubrikrad { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.rubrikrad h1 { margin: 0; }
+.turneringskort { display: block; padding: 12px 14px; margin-top: 10px; border-radius: 10px; background: var(--kort-2); color: var(--text); text-decoration: none; border-left: 4px solid var(--gron); }
+.turneringskort.klar { border-left-color: var(--guld); }
+.tk-namn { display: block; font-weight: 700; font-size: 17px; }
+.tk-info, .tk-status { display: block; font-size: 13px; color: var(--text-2); }
+.tk-status { color: var(--text); margin-top: 4px; }
+.matchrad { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--linje); }
+.matchrad > span:nth-child(3) { text-align: right; }
+.matchrad .res { font-variant-numeric: tabular-nums; color: var(--text-3); min-width: 44px; text-align: center; }
+.matchrad.klar .res { color: var(--text); font-weight: 700; }
+.matchrad .vann { font-weight: 700; color: var(--guld); }
+.matchrad .btn.liten { min-height: 44px; }
+.vinnarrad { font-size: 22px; font-weight: 800; color: var(--guld); margin: 8px 0; }
+.turneringstabell tr.jag td { color: var(--gron-2); font-weight: 700; }
+@media (max-width: 380px) { .tabs a { padding: 8px 5px; font-size: 13.5px; } .tabs a.tab-ikon { padding: 8px 4px; } .tabs a.tab-ikon svg { width: 20px; height: 20px; } }

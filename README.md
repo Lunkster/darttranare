@@ -11,6 +11,7 @@ Egen träningsapp för dart som ersätter My Dart Training, med synk mellan tele
 - **Cricket** 15–20 och bull, pil för pil, solo eller flera spelare. MPR.
 - **Bob's 27**, **Runt dubblarna** (3 pilar per dubbel), **JDC Challenge**
 - **Pilar mot ett mål** – 30–100 pilar mot valfritt mål, singel/dubbel/trippel/miss per pil
+- **Turneringar** (v0.5) – serie eller utslag i X01 eller cricket, tabell, matcher i valfri ordning och samtidigt
 
 ## Struktur
 
@@ -20,6 +21,8 @@ Egen träningsapp för dart som ersätter My Dart Training, med synk mellan tele
 | `spel.js` | Spellogik utan sidan: X01-regler, utgångar, spelplaner, poäng, cricket |
 | `spela.js` | Starta och spela – alla speltyper, pågående spel sparas lokalt |
 | `historik.js` | Alla spel, ta bort |
+| `hem.js` | Startsidan: fortsätt spel, nästa turneringsmatch, snabbstart, form, senaste spel |
+| `turnering.js` | Turneringar: lista, skapa (admin), tabell, lottning, starta matcher |
 | `jag.js` | Min sida: byta alias, välja vad som visas under spelet |
 | `nyheter.js`, `nyheter.json` | Nytt i appen (i-knappen) – `nyheter.json` görs från Obsidian-anteckningen *Darttränaren - Nyheter* |
 | `statistik.js`, `diagram.js` | Statistik per spelare med egna SVG-diagram |

@@ -45,7 +45,7 @@ export async function write(method, path, body, prefer = 'return=representation'
   return txt ? JSON.parse(txt) : null;
 }
 
-export const rpc = (namn, args) => write('POST', `rpc/${namn}`, args, 'return=minimal');
+export const rpc = (namn, args, medSvar = false) => write('POST', `rpc/${namn}`, args, medSvar ? 'return=representation' : 'return=minimal');
 
 async function fel(r) {
   const t = await r.text();
@@ -81,6 +81,9 @@ export const isLoggedIn = () => !!current;
 // Den inloggades konto-id (sub i JWT) och spelaren som hör till kontot
 export function anvandarId() {
   try { return JSON.parse(atob(current.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub ?? null; } catch { return null; }
+}
+export function arAdmin() {   // får skapa turneringar (app_metadata.dart_admin – kontrolleras också i databasen)
+  try { return JSON.parse(atob(current.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).app_metadata?.dart_admin === true; } catch { return false; }
 }
 export const jag = (alla) => alla.find((s) => s.anvandare && s.anvandare === anvandarId()) ?? null;
 

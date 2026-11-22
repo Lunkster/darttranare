@@ -3,7 +3,7 @@
 <style>body{font:15px system-ui;background:#111;color:#eee;padding:16px}.ok{color:#5c5}.fel{color:#f66;font-weight:700}</style></head>
 <body><h1>Logiktester</h1><pre id="ut"></pre>
 <script type="module">
-import * as S from '../spel.js?v=0.4.0';
+import * as S from '../spel.js?v=0.5.0';
 const ut = document.getElementById('ut'); let fel = 0, ok = 0;
 const kolla = (namn, villkor, extra = '') => { villkor ? ok++ : fel++; ut.innerHTML += `<span class="${villkor ? 'ok' : 'fel'}">${villkor ? 'OK ' : 'FEL'}</span> ${namn} ${extra}\n`; };
 const lika = (namn, a, b) => kolla(namn, JSON.stringify(a) === JSON.stringify(b), `→ ${JSON.stringify(a)}${JSON.stringify(a) === JSON.stringify(b) ? '' : ` (väntat ${JSON.stringify(b)})`}`);
@@ -53,6 +53,28 @@ const solo = S.cricketLage([1], ['T20', 'T19', 'T18', 'T17', 'T16', 'T15', 'D25'
 lika('solo cricket stängd', [solo.vinnare, solo.lage.get(1).allaMarks, solo.lage.get(1).poang], [1, 21, 0]);
 const ej = S.cricketLage([1, 2], ['T20', 'T19', 'T18', 'T17', 'T16', 'T15', 'D25', 'S25'].map((segment) => ({ spelare_id: 1, segment })));
 lika('stängt med flest poäng vinner', ej.vinnare, 1);
+
+// Turneringar
+let n = 0; const id = () => `m${++n}`;
+const serie4 = S.serieSchema([1, 2, 3, 4], false, id);
+const par = (ms) => ms.map((m) => [m.spelare1, m.spelare2].sort().join('-')).sort();
+lika('serie 4: 6 matcher, alla möts en gång', [serie4.length, new Set(par(serie4)).size, Math.max(...serie4.map((m) => m.runda))], [6, 6, 3]);
+kolla('serie 4: ingen spelar två matcher samma runda', [1, 2, 3].every((r) => { const s = serie4.filter((m) => m.runda === r).flatMap((m) => [m.spelare1, m.spelare2]); return new Set(s).size === s.length; }));
+const serie3 = S.serieSchema([1, 2, 3], true, id);
+lika('serie 3 dubbelmöte: 6 matcher, varje par två gånger', [serie3.length, par(serie3)], [6, ['1-2', '1-2', '1-3', '1-3', '2-3', '2-3']]);
+n = 0; const ut3 = S.utslagSchema([1, 2, 3], id);
+lika('utslag 3: seed 1 walk over, final', ut3.map((m) => [m.runda, m.spelare1, m.spelare2, m.fran1, m.fran2]), [[1, 1, null, null, null], [1, 2, 3, null, null], [2, null, null, 'm1', 'm2']]);
+n = 0; const ut8 = S.utslagSchema([1, 2, 3, 4, 5, 6, 7, 8], id);
+lika('utslag 8: 1–8, 4–5, 2–7, 3–6 och 7 matcher', [ut8.length, ut8.filter((m) => m.runda === 1).map((m) => `${m.spelare1}-${m.spelare2}`)], [7, ['1-8', '4-5', '2-7', '3-6']]);
+const legs = [
+  { turnering_match: 'm2', spelare_id: 2, vunna: 1, legs: 3, poang: 1300, pilar: 60, marks: 0, rundor: 0 },
+  { turnering_match: 'm2', spelare_id: 3, vunna: 2, legs: 3, poang: 1503, pilar: 66, marks: 0, rundor: 0 },
+];
+const lag = S.matchlagen(ut3, legs, 2);
+lika('matchläge: walk over, vinnare, finalen fylls på', lag.map((m) => [m.p1, m.p2, m.vinnare, m.spelbar]), [[1, null, 1, false], [2, 3, 3, false], [1, 3, null, true]]);
+const tab = S.turneringstabell([1, 2, 3], lag);
+lika('tabell: 2 p per vinst, walk over räknas inte som match', tab.map((r) => [r.spelare_id, r.poang, r.matcher, r.diff]), [[3, 2, 1, 1], [1, 0, 0, 0], [2, 0, 1, -1]]);
+lika('tabell: snitt', Math.round(tab[0].snitt * 10) / 10, 68.3);
 
 ut.innerHTML += `\n<b class="${fel ? 'fel' : 'ok'}">fel: ${fel}</b> (${ok} OK)\n`;
 document.title = `fel: ${fel}`;

@@ -1,6 +1,6 @@
 // Historik: spel man själv var med i (RLS), nyast först, med möjlighet att ta bort. Spel i offlinekön visas överst.
-import { api, rpc, esc, fmt, proc, tid, ko, skickaKo } from './lib.js?v=0.4.0';
-import { TYPER } from './spel.js?v=0.4.0';
+import { api, rpc, esc, fmt, proc, tid, ko, skickaKo } from './lib.js?v=0.5.0';
+import { TYPER } from './spel.js?v=0.5.0';
 
 export async function renderHistorik(el, alla) {
   const [x01, ovr] = await Promise.all([

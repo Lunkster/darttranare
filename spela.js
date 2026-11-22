@@ -1,10 +1,10 @@
 // Starta och spela: X01, cricket och övningar. Pågående spel sparas lokalt efter varje kast,
 // färdiga legs/övningar läggs i offlinekön och skickas med spara_spel.
-import { esc, fmt, proc, minns, uuid, write, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.4.0';
+import { esc, fmt, proc, minns, uuid, write, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.5.0';
 import {
   TYPER, besok, fragaDubbel, utgang, kanGaUt, x01Snitt, plan, knappar, ovningSumma, ovningSlut,
   cricketLage, CRICKET, marksText, segText, malText, traff,
-} from './spel.js?v=0.4.0';
+} from './spel.js?v=0.5.0';
 
 let app = null;
 let inmatning = '';      // X01: siffror som skrivits in
@@ -17,11 +17,12 @@ const pagaende = (v) => minns('pagaende', v);
 const nu = () => new Date().toISOString();
 
 // ============================================================ start
-export function renderStart(el, alla) {
+export function renderStart(el, alla, typFranLank) {
   app = el; tangent = null;
   const aktiva = alla.filter((s) => s.aktiv);
   const forst = jag(alla) ?? aktiva[0];
   const val = minns('val') ?? { typ: 'x01', spelare: forst ? [forst.id] : [], inst: {} };
+  if (typFranLank && TYPER[typFranLank] && typFranLank !== val.typ) { val.typ = typFranLank; minns('val', val); }
   val.spelare = val.spelare.filter((id) => aktiva.some((s) => s.id === id));
   const p = pagaende();
   const namnPa = (ids) => ids.map((id) => alla.find((s) => s.id === id)?.namn ?? '?').join(', ');
@@ -99,13 +100,20 @@ export function renderStart(el, alla) {
   };
 }
 
-function nyttSpel(typ, inst, spelare, namn) {
+function nyttSpel(typ, inst, spelare, namn, turnering = null) {
   inmatning = ''; fraga = null;
+  // turnering = {match, id, namn, vunna:{spelare_id: legs}} – legsen i matchen får match_id = turneringsmatchens id
+  const vunna = Object.fromEntries(spelare.map((id) => [id, turnering?.vunna?.[id] ?? 0]));
   pagaende({
-    typ, inst, spelare: [...spelare], namn, match_id: spelare.length > 1 || inst.forst_till > 1 ? uuid() : null,
-    vunna: Object.fromEntries(spelare.map((id) => [id, 0])), legNr: 1,
+    typ, inst, spelare: [...spelare], namn, turnering,
+    match_id: turnering ? turnering.match : (spelare.length > 1 || inst.forst_till > 1 ? uuid() : null),
+    vunna, legNr: Object.values(vunna).reduce((a, v) => a + v, 0) + 1,
     leg: { id: uuid(), start: nu(), rundor: [], pilar: [] }, klar: null,
   });
+}
+export function startaTurneringsmatch(typ, inst, spelare, namn, turnering) {
+  nyttSpel(typ, inst, spelare, namn, turnering);
+  location.hash = '#/spel';
 }
 
 // ============================================================ spela
@@ -122,7 +130,7 @@ export function renderSpel(el) {
 const rita = () => renderSpel(app);
 const ordning = (s) => { const k = (s.legNr - 1) % s.spelare.length; return [...s.spelare.slice(k), ...s.spelare.slice(0, k)]; };
 const N = (s, id) => esc(s.namn[id] ?? '?');
-const legInfo = (s) => (s.inst.forst_till > 1 ? `Leg ${s.legNr} · först till ${s.inst.forst_till}` : '');
+const legInfo = (s) => [s.turnering ? esc(s.turnering.namn) : '', s.inst.forst_till > 1 ? `Leg ${s.legNr} · först till ${s.inst.forst_till}` : ''].filter(Boolean).join(' · ');
 const avbrytKnapp = `<button class="btn liten" id="avbryt" type="button">Avbryt</button>`;
 const huvudKnappar = (kanAngra) => `<span class="huvudknappar"><button class="btn liten" id="angra" type="button"${kanAngra ? '' : ' disabled'}>Ångra</button>${avbrytKnapp}</span>`;
 function kopplaAvbryt() {
@@ -138,6 +146,7 @@ function sparaLeg(s, spelarRader) {
   if (s.match_id) inst.leg = s.legNr;
   laggIKo({
     id: s.leg.id, typ: s.typ, installningar: inst, start: s.leg.start, slut: nu(), match_id: s.match_id, kalla: 'app', anteckning: null,
+    turnering_match: s.turnering?.match ?? null,
     spelare: spelarRader, rundor: s.leg.rundor, pilar: s.leg.pilar,
   });
   skickaKo();
@@ -156,6 +165,9 @@ function igen(s) { nyttSpel(s.typ, s.inst, s.spelare, s.namn); }
 
 function slutKnappar(s, angraText) {
   const match = !s.klar || s.klar.match || s.klar.ovning;
+  if (s.turnering && match) return `<p class="rad">
+    <a class="btn primar" href="#/turnering/${s.turnering.id}" id="tillstart">Till ${esc(s.turnering.namn)}</a>
+    <button class="btn" id="angra" type="button">${angraText}</button></p>`;
   return `<p class="rad">
     ${match ? '<button class="btn primar" id="igen" type="button">Spela igen</button>' : '<button class="btn primar" id="nasta" type="button">Nästa leg</button>'}
     <button class="btn" id="angra" type="button">${angraText}</button>

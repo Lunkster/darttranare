@@ -143,3 +143,91 @@ export function cricketLage(spelare, pilar) {
   return { lage, vinnare };
 }
 export const marksText = (m) => ['', '/', 'X', 'Ⓧ'][Math.min(3, m)];
+
+// ---------- Turneringar ----------
+// Spelschema för serie: alla möter alla (cirkelmetoden), ev. dubbelmöte med ombytta platser.
+// spelare = [id, …] i seedordning, nyId = () => uuid. Returnerar [{id, runda, nr, spelare1, spelare2, fran1, fran2}].
+export function serieSchema(spelare, dubbelmote = false, nyId) {
+  const lista = spelare.length % 2 ? [...spelare, null] : [...spelare];
+  const n = lista.length, ut = [];
+  let rot = [...lista];
+  for (let r = 0; r < n - 1; r++) {
+    let nr = 0;
+    for (let i = 0; i < n / 2; i++) {
+      const a = rot[i], b = rot[n - 1 - i];
+      if (a === null || b === null) continue;   // fri omgång
+      const [s1, s2] = r % 2 ? [b, a] : [a, b];
+      ut.push({ id: nyId(), runda: r + 1, nr: ++nr, spelare1: s1, spelare2: s2, fran1: null, fran2: null });
+    }
+    rot = [rot[0], rot[n - 1], ...rot.slice(1, n - 1)];
+  }
+  if (dubbelmote) {
+    const forsta = ut.length, rundor = n - 1;
+    for (let i = 0; i < forsta; i++) {
+      const m = ut[i];
+      ut.push({ id: nyId(), runda: m.runda + rundor, nr: m.nr, spelare1: m.spelare2, spelare2: m.spelare1, fran1: null, fran2: null });
+    }
+  }
+  return ut;
+}
+
+// Spelschema för utslag: seedning 1 mot sista, fria platser (walk over) till de högst seedade.
+export function utslagSchema(spelare, nyId) {
+  let storlek = 2; while (storlek < spelare.length) storlek *= 2;
+  // seedordning i lottningen så att 1 och 2 bara kan mötas i finalen
+  let ordning = [1];
+  while (ordning.length < storlek) ordning = ordning.flatMap((s) => [s, ordning.length * 2 + 1 - s]);
+  const plats = ordning.map((seed) => spelare[seed - 1] ?? null);
+  const ut = [];
+  let forra = [];
+  for (let i = 0; i < storlek / 2; i++) {
+    const m = { id: nyId(), runda: 1, nr: i + 1, spelare1: plats[2 * i], spelare2: plats[2 * i + 1], fran1: null, fran2: null };
+    if (m.spelare1 === null) [m.spelare1, m.spelare2] = [m.spelare2, null];
+    ut.push(m); forra.push(m);
+  }
+  for (let r = 2; forra.length > 1; r++) {
+    const nya = [];
+    for (let i = 0; i < forra.length / 2; i++) nya.push({ id: nyId(), runda: r, nr: i + 1, spelare1: null, spelare2: null, fran1: forra[2 * i].id, fran2: forra[2 * i + 1].id });
+    ut.push(...nya); forra = nya;
+  }
+  return ut;
+}
+
+// Läget i varje match: vilka som spelar (utslag: vinnaren från tidigare match), legs, vinnare.
+// legs = [{turnering_match, spelare_id, legs, vunna, poang, pilar, marks, rundor}] (vyn v_turnering_leg)
+export function matchlagen(matcher, legs, forstTill) {
+  const perId = new Map(matcher.map((m) => [m.id, m]));
+  const lage = new Map();
+  const los = (id) => {
+    if (lage.has(id)) return lage.get(id);
+    const m = perId.get(id);
+    const spelare = (s, fran) => (s ?? (fran ? los(fran).vinnare : null));
+    const p1 = spelare(m.spelare1, m.fran1), p2 = spelare(m.spelare2, m.fran2);
+    const rad = (p) => legs.find((l) => l.turnering_match === id && l.spelare_id === p) ?? null;
+    const l1 = rad(p1)?.vunna ?? 0, l2 = rad(p2)?.vunna ?? 0;
+    const walkover = (p1 !== null && p2 === null && !m.fran2) ? p1 : (p2 !== null && p1 === null && !m.fran1) ? p2 : null;
+    const vinnare = walkover ?? (l1 >= forstTill ? p1 : l2 >= forstTill ? p2 : null);
+    const res = { ...m, p1, p2, legs1: l1, legs2: l2, rad1: rad(p1), rad2: rad(p2), vinnare, walkover: walkover !== null,
+      klar: vinnare !== null, spelbar: vinnare === null && p1 !== null && p2 !== null, pagar: vinnare === null && (l1 + l2) > 0 };
+    lage.set(id, res);
+    return res;
+  };
+  return matcher.map((m) => los(m.id)).sort((a, b) => a.runda - b.runda || a.nr - b.nr);
+}
+
+// Tabell: 2 poäng per vunnen match, sedan legsskillnad och snitt (X01) eller MPR (cricket).
+export function turneringstabell(deltagare, lagen) {
+  const t = new Map(deltagare.map((id) => [id, { spelare_id: id, matcher: 0, vunna: 0, forlorade: 0, legsFor: 0, legsMot: 0, poangX: 0, pilar: 0, marks: 0, rundor: 0 }]));
+  for (const m of lagen) {
+    for (const [p, rad, lf, lm] of [[m.p1, m.rad1, m.legs1, m.legs2], [m.p2, m.rad2, m.legs2, m.legs1]]) {
+      const r = t.get(p);
+      if (!r) continue;
+      r.legsFor += lf; r.legsMot += lm;
+      if (rad) { r.poangX += Number(rad.poang); r.pilar += Number(rad.pilar); r.marks += Number(rad.marks); r.rundor += Number(rad.rundor); }
+      if (m.klar && !m.walkover) { r.matcher++; if (m.vinnare === p) r.vunna++; else r.forlorade++; }
+    }
+  }
+  return [...t.values()].map((r) => ({ ...r, poang: 2 * r.vunna, diff: r.legsFor - r.legsMot,
+    snitt: r.pilar ? (3 * r.poangX) / r.pilar : null, mpr: r.rundor ? r.marks / r.rundor : null }))
+    .sort((a, b) => b.poang - a.poang || b.diff - a.diff || (b.snitt ?? b.mpr ?? 0) - (a.snitt ?? a.mpr ?? 0));
+}

@@ -1,0 +1,134 @@
+// Turneringar: lista, skapa (bara admin), tabell eller utslagsträd, matcher att spela.
+// Matchresultat och tabell räknas i spel.js ur vyn v_turnering_leg – inget lagras.
+import { api, rpc, esc, fmt, jag, arAdmin, minns, uuid, datum } from './lib.js?v=0.5.0';
+import { serieSchema, utslagSchema, matchlagen, turneringstabell } from './spel.js?v=0.5.0';
+import { startaTurneringsmatch } from './spela.js?v=0.5.0';
+
+const formText = (t) => `${t.format === 'serie' ? (t.installningar?.dubbelmote ? 'Serie, dubbelmöte' : 'Serie') : 'Utslag'} · ${t.typ === 'x01' ? t.installningar?.start ?? 501 : 'Cricket'} · först till ${t.installningar?.forst_till ?? 1}`;
+const rundnamn = (r, antal) => ({ 0: 'Final', 1: 'Semifinal', 2: 'Kvartsfinal' }[antal - r] ?? `Runda ${r}`);
+
+// Alla turneringar man ser, med matchlägen – används också av startsidan
+export async function hamtaTurneringar() {
+  const [turneringar, deltagare, matcher, legs] = await Promise.all([
+    api('turnering?select=*&order=skapad.desc'), api('turnering_deltagare?select=*'),
+    api('turnering_match?select=*'), api('v_turnering_leg?select=*'),
+  ]);
+  return turneringar.map((t) => {
+    const lagen = matchlagen(matcher.filter((m) => m.turnering_id === t.id), legs, t.installningar?.forst_till ?? 1);
+    const d = deltagare.filter((x) => x.turnering_id === t.id).sort((a, b) => a.seed - b.seed).map((x) => x.spelare_id);
+    const klar = lagen.length > 0 && lagen.every((m) => m.klar);
+    return { ...t, deltagare: d, lagen, klar };
+  });
+}
+
+export const minaMatcher = (t, mig) => t.lagen.filter((m) => m.spelbar && (m.p1 === mig || m.p2 === mig));
+
+function starta(t, m, alla) {
+  const namn = Object.fromEntries(alla.map((s) => [s.id, s.namn]));
+  const p = minns('pagaende');
+  if (p?.turnering?.match === m.id && !p.klar) { location.hash = '#/spel'; return; }
+  if (p && !p.klar && !confirm('Det finns ett pågående spel. Avbryta det och starta matchen?')) return;
+  const inst = t.typ === 'x01' ? { start: t.installningar?.start ?? 501, forst_till: t.installningar?.forst_till ?? 1 } : { forst_till: t.installningar?.forst_till ?? 1 };
+  startaTurneringsmatch(t.typ, inst, [m.p1, m.p2], namn, { match: m.id, id: t.id, namn: t.namn, vunna: { [m.p1]: m.legs1, [m.p2]: m.legs2 } });
+}
+
+export async function renderTurneringar(el, alla) {
+  const lista = await hamtaTurneringar();
+  const mig = jag(alla)?.id, N = (id) => esc(alla.find((s) => s.id === id)?.namn ?? '?');
+  el.innerHTML = `<div class="card"><div class="rubrikrad"><h1>Turneringar</h1>
+      ${arAdmin() ? '<a class="btn primar" href="#/turnering/ny">Ny turnering</a>' : ''}</div>
+    ${lista.length ? '' : `<p class="muted">Inga turneringar än.${arAdmin() ? '' : ' Henrik skapar turneringarna.'}</p>`}
+    ${lista.map((t) => {
+      const nasta = minaMatcher(t, mig)[0];
+      return `<a class="turneringskort${t.klar ? ' klar' : ''}" href="#/turnering/${t.id}">
+        <span class="tk-namn">${esc(t.namn)}</span>
+        <span class="tk-info">${formText(t)} · ${t.deltagare.length} spelare</span>
+        <span class="tk-status">${t.klar ? `Klar – vinnare ${N(t.format === 'utslag' ? t.lagen.at(-1)?.vinnare : turneringstabell(t.deltagare, t.lagen)[0]?.spelare_id)}`
+          : nasta ? `Din nästa match: mot ${N(nasta.p1 === mig ? nasta.p2 : nasta.p1)}` : `${t.lagen.filter((m) => m.klar && !m.walkover).length} av ${t.lagen.filter((m) => !m.walkover).length} matcher spelade`}</span>
+      </a>`;
+    }).join('')}</div>`;
+}
+
+export async function renderTurnering(el, alla, id) {
+  const t = (await hamtaTurneringar()).find((x) => x.id === id);
+  if (!t) { el.innerHTML = '<div class="card"><h1>Turneringen finns inte</h1><p class="muted">Eller så är du inte med i den.</p><a class="btn" href="#/turneringar">Alla turneringar</a></div>'; return; }
+  const mig = jag(alla)?.id, N = (pid) => (pid === null || pid === undefined ? '–' : esc(alla.find((s) => s.id === pid)?.namn ?? '?'));
+  const mina = minaMatcher(t, mig);
+  const kanSpela = (m) => m.spelbar && (m.p1 === mig || m.p2 === mig || t.deltagare.includes(mig) || arAdmin());
+  const matchrad = (m) => `<div class="matchrad${m.klar ? ' klar' : ''}">
+      <span class="${m.vinnare === m.p1 && m.p1 !== null ? 'vann' : ''}">${N(m.p1)}</span>
+      <span class="res">${m.walkover ? 'w.o.' : m.klar || m.pagar ? `${m.legs1}–${m.legs2}` : 'mot'}</span>
+      <span class="${m.vinnare === m.p2 && m.p2 !== null ? 'vann' : ''}">${N(m.p2)}</span>
+      ${kanSpela(m) ? `<button class="btn liten${m.p1 === mig || m.p2 === mig ? ' primar' : ''}" data-spela="${m.id}" type="button">${m.pagar ? 'Fortsätt' : 'Spela'}</button>` : '<span></span>'}
+    </div>`;
+  const rundor = [...new Set(t.lagen.map((m) => m.runda))];
+  const tabell = turneringstabell(t.deltagare, t.lagen);
+  el.innerHTML = `
+    <div class="card">
+      <h1>${esc(t.namn)}</h1>
+      <p class="muted">${formText(t)} · skapad ${datum(t.skapad)}</p>
+      ${t.klar ? `<p class="vinnarrad">🏆 ${N(t.format === 'utslag' ? t.lagen.at(-1)?.vinnare : tabell[0]?.spelare_id)}</p>` : ''}
+      ${mina.length ? `<h3>Dina matcher</h3>${mina.map(matchrad).join('')}` : ''}
+    </div>
+    ${t.format === 'serie' ? `<div class="card"><h2>Tabell</h2>
+      <table class="tabell turneringstabell"><tr><th></th><th>M</th><th>V</th><th>F</th><th>Legs</th><th>P</th><th>${t.typ === 'x01' ? 'Snitt' : 'MPR'}</th></tr>
+      ${tabell.map((r, i) => `<tr class="${r.spelare_id === mig ? 'jag' : ''}"><td>${i + 1}. ${N(r.spelare_id)}</td><td>${r.matcher}</td><td>${r.vunna}</td><td>${r.forlorade}</td>
+        <td>${r.legsFor}–${r.legsMot}</td><td><b>${r.poang}</b></td><td>${t.typ === 'x01' ? fmt(r.snitt, 1) : fmt(r.mpr, 2)}</td></tr>`).join('')}</table>
+      <p class="forklaring">2 poäng per vunnen match, sedan legsskillnad och ${t.typ === 'x01' ? 'snitt' : 'MPR'}.</p></div>` : ''}
+    <div class="card"><h2>${t.format === 'serie' ? 'Matcher' : 'Lottning'}</h2>
+      ${rundor.map((r) => `<h3>${t.format === 'utslag' ? rundnamn(r, rundor.length) : `Omgång ${r}`}</h3>${t.lagen.filter((m) => m.runda === r).map(matchrad).join('')}`).join('')}
+      <p class="forklaring">Matcherna kan spelas i vilken ordning som helst och samtidigt på olika ställen.</p>
+    </div>
+    ${arAdmin() ? '<div class="card"><button class="btn liten fara" id="tabort" type="button">Ta bort turneringen</button> <span class="forklaring">Spelade legs finns kvar som vanliga spel.</span></div>' : ''}`;
+  el.querySelectorAll('[data-spela]').forEach((b) => b.onclick = () => starta(t, t.lagen.find((m) => m.id === b.dataset.spela), alla));
+  el.querySelector('#tabort')?.addEventListener('click', async () => {
+    if (!confirm(`Ta bort turneringen ${t.namn}? Det går inte att ångra.`)) return;
+    try { await rpc('ta_bort_turnering', { tid: t.id }); location.hash = '#/turneringar'; } catch (e) { alert(e.message); }
+  });
+}
+
+export function renderNyTurnering(el, alla) {
+  if (!arAdmin()) { el.innerHTML = '<div class="card"><h1>Ny turnering</h1><p class="muted">Bara Henrik kan skapa turneringar än så länge.</p></div>'; return; }
+  const v = minns('nyturnering') ?? { namn: '', format: 'serie', dubbelmote: false, typ: 'x01', start: 501, forst_till: 3, deltagare: [] };
+  const aktiva = alla.filter((s) => s.aktiv);
+  const chips = (namn, alt, varde) => `<div class="val" data-falt="${namn}">${alt.map(([x, txt]) => `<button type="button" class="chip${String(x) === String(varde) ? ' vald' : ''}" data-v="${x}">${txt}</button>`).join('')}</div>`;
+  el.innerHTML = `<form class="card" id="nyform">
+    <h1>Ny turnering</h1>
+    <label for="tnamn">Namn</label><input id="tnamn" maxlength="60" required value="${esc(v.namn)}" placeholder="t.ex. Vinterserien">
+    <h3>Format</h3>${chips('format', [['serie', 'Serie – alla möter alla'], ['utslag', 'Utslag']], v.format)}
+    ${v.format === 'serie' ? `<label class="vaxel"><input type="checkbox" id="dubbelmote"${v.dubbelmote ? ' checked' : ''}><span><b>Dubbelmöte</b><small>Alla möter alla två gånger.</small></span></label>` : ''}
+    <h3>Spel</h3>${chips('typ', [['x01', 'X01'], ['cricket', 'Cricket']], v.typ)}
+    ${v.typ === 'x01' ? chips('start', [[301, '301'], [501, '501']], v.start) : ''}
+    <h3>Först till</h3>${chips('forst_till', [[1, '1 leg'], [2, '2 legs'], [3, '3 legs'], [4, '4 legs'], [5, '5 legs']], v.forst_till)}
+    <h3>Deltagare <span class="muted liten">i seedordning – bäst först</span></h3>
+    <div class="val" id="deltagarval">${aktiva.map((s) => { const i = v.deltagare.indexOf(s.id);
+      return `<button type="button" class="chip${i >= 0 ? ' vald' : ''}" data-spelare="${s.id}">${i >= 0 ? `<b>${i + 1}</b> ` : ''}${esc(s.namn)}${s.anvandare ? '' : ' <span class="gast">gäst</span>'}</button>`; }).join('')}</div>
+    <p class="forklaring">Deltagare med konto ser alla matcher i turneringen. Gäster spelas in av någon annan.</p>
+    <p class="msg" id="nymsg"></p>
+    <button class="btn primar stor" type="submit"${v.deltagare.length >= 2 ? '' : ' disabled'}>Skapa turneringen</button>
+  </form>`;
+  const spara = () => { v.namn = el.querySelector('#tnamn').value; minns('nyturnering', v); renderNyTurnering(el, alla); };
+  el.querySelectorAll('[data-falt]').forEach((g) => g.querySelectorAll('button').forEach((b) => b.onclick = () => {
+    const x = b.dataset.v; v[g.dataset.falt] = /^\d+$/.test(x) ? Number(x) : x; spara();
+  }));
+  el.querySelector('#dubbelmote')?.addEventListener('change', (e) => { v.dubbelmote = e.target.checked; spara(); });
+  el.querySelectorAll('[data-spelare]').forEach((b) => b.onclick = () => {
+    const id = Number(b.dataset.spelare), i = v.deltagare.indexOf(id);
+    if (i >= 0) v.deltagare.splice(i, 1); else v.deltagare.push(id);
+    spara();
+  });
+  el.querySelector('#nyform').onsubmit = async (e) => {
+    e.preventDefault();
+    const namn = el.querySelector('#tnamn').value.trim(), m = el.querySelector('#nymsg');
+    if (!namn) { m.textContent = 'Ge turneringen ett namn.'; return; }
+    const matcher = v.format === 'serie' ? serieSchema(v.deltagare, v.dubbelmote, uuid) : utslagSchema(v.deltagare, uuid);
+    const installningar = { forst_till: v.forst_till, ...(v.typ === 'x01' ? { start: v.start } : {}), ...(v.format === 'serie' ? { dubbelmote: v.dubbelmote } : {}) };
+    try {
+      m.textContent = 'Skapar …';
+      const tid = await rpc('skapa_turnering', { p: { namn, format: v.format, typ: v.typ, installningar,
+        deltagare: v.deltagare.map((id, i) => ({ spelare_id: id, seed: i + 1 })), matcher } }, true);
+      minns('nyturnering', null);
+      location.hash = `#/turnering/${tid}`;
+    } catch (err) { m.textContent = err.natfel || err instanceof TypeError ? 'Att skapa en turnering kräver nät.' : err.message; }
+  };
+}

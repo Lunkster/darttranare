@@ -1,10 +1,12 @@
 // Router, inloggning, spelarlistan och offlinekön.
-import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.4.0';
-import { renderStart, renderSpel } from './spela.js?v=0.4.0';
-import { renderHistorik } from './historik.js?v=0.4.0';
-import { renderStatistik } from './statistik.js?v=0.4.0';
-import { renderJag } from './jag.js?v=0.4.0';
-import { renderNyheter, markeraOsedda } from './nyheter.js?v=0.4.0';
+import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.5.0';
+import { renderStart, renderSpel } from './spela.js?v=0.5.0';
+import { renderHistorik } from './historik.js?v=0.5.0';
+import { renderStatistik } from './statistik.js?v=0.5.0';
+import { renderJag } from './jag.js?v=0.5.0';
+import { renderNyheter, markeraOsedda } from './nyheter.js?v=0.5.0';
+import { renderHem } from './hem.js?v=0.5.0';
+import { renderTurneringar, renderTurnering, renderNyTurnering } from './turnering.js?v=0.5.0';
 
 const app = document.getElementById('app');
 
@@ -26,8 +28,9 @@ function visaKo() {
 }
 
 async function route() {
-  const [vy] = location.hash.replace(/^#\/?/, '').split('/');
-  document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('active', a.dataset.route === (vy === 'spel' ? 'spela' : (vy || 'spela'))));
+  const [vy, ...arg] = location.hash.replace(/^#\/?/, '').split('/');
+  const flik = { '': 'hem', ny: 'hem', spel: 'hem', turnering: 'turneringar' }[vy] ?? vy;
+  document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('active', a.dataset.route === flik));
   document.getElementById('loggaut').hidden = !isLoggedIn();
   visaKo();
   if (vy !== 'spel') document.body.classList.remove('spelar');
@@ -42,7 +45,11 @@ async function route() {
     if (vy === 'historik') return await renderHistorik(app, await spelare());
     if (vy === 'statistik') return await renderStatistik(app, await spelare());
     if (vy === 'jag') return renderJag(app, await spelare(), visaInloggad);
-    return renderStart(app, await spelare());
+    if (vy === 'ny') return renderStart(app, await spelare(), arg[0]);
+    if (vy === 'turneringar') return await renderTurneringar(app, await spelare());
+    if (vy === 'turnering' && arg[0] === 'ny') return renderNyTurnering(app, await spelare());
+    if (vy === 'turnering' && arg[0]) return await renderTurnering(app, await spelare(), arg[0]);
+    return await renderHem(app, await spelare());
   } catch (e) {
     if (e.status === 401) return renderLogin('Logga in igen.');
     const natfel = e.natfel || e instanceof TypeError;
