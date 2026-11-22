@@ -8,6 +8,7 @@
 - Anrop mot PostgREST kräver headern `Accept-Profile: dart` (läsning) och `Content-Profile: dart` (skrivning) – se `lib.js`.
 - Versionsnummer i `index.html` (`?v=`), i importerna och i `sw.js` ändras vid varje release.
 - Inga personuppgifter, backuper eller nycklar (utom publishable key) i repot – `.mdt`-filer och importens utdata är ignorerade.
+- Nytt i appen (i-knappen) visar `nyheter.json`. Skriv kort i Obsidian *Darttränaren - Nyheter* (en mening per punkt, version i slutet), kör `python3 ~/Dokument/Claude/Darttranare/skript/nyheter.py` och committa `nyheter.json`.
 - Testa före commit: `tests/logik.html` och `tests/attrapp.html?flode` ska båda visa `fel: 0` (se `tests/README.md`).
 - Gränssnittet: fokus på poängen, stora knappar för stora fingrar, extrafunktioner valbara (`val()` i `lib.js`, Min sida) – princip från Sten 2026-11-22.
 - Importen hittar spelare på `spelare.mdt_namn` – alias (`namn`) byts fritt i appen.

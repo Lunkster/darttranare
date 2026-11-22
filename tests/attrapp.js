@@ -1,6 +1,6 @@
 // Attrapp för Supabase (PostgREST + auth) i minnet – testerna rör aldrig riktiga databasen.
 // Ersätter window.fetch innan appen laddas. Påhittade spelare. Vyerna räknas med samma regler som i SQL.
-import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.3.0';
+import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.3.1';
 
 export const KOD = 'kod123';
 export const EPOST = 'anna@exempel.se';

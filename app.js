@@ -1,9 +1,10 @@
 // Router, inloggning, spelarlistan och offlinekön.
-import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.3.0';
-import { renderStart, renderSpel } from './spela.js?v=0.3.0';
-import { renderHistorik } from './historik.js?v=0.3.0';
-import { renderStatistik } from './statistik.js?v=0.3.0';
-import { renderJag } from './jag.js?v=0.3.0';
+import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.3.1';
+import { renderStart, renderSpel } from './spela.js?v=0.3.1';
+import { renderHistorik } from './historik.js?v=0.3.1';
+import { renderStatistik } from './statistik.js?v=0.3.1';
+import { renderJag } from './jag.js?v=0.3.1';
+import { renderNyheter, markeraOsedda } from './nyheter.js?v=0.3.1';
 
 const app = document.getElementById('app');
 
@@ -30,6 +31,9 @@ async function route() {
   document.getElementById('loggaut').hidden = !isLoggedIn();
   visaKo();
   if (vy === 'loggaut') { logout(); location.hash = '#/'; return; }
+  if (vy === 'nyheter') {   // går att läsa även utan inloggning
+    try { return await renderNyheter(app); } catch { app.innerHTML = '<div class="card fel"><h2>Inget nät</h2><p>Nyheterna kräver nät.</p></div>'; return; }
+  }
   if (!isLoggedIn()) return renderLogin();
   try {
     if (vy !== 'spel') spelare().then(visaInloggad).catch(() => {});
@@ -82,4 +86,5 @@ window.addEventListener('hashchange', route);
 window.addEventListener('online', () => skickaKo());
 window.addEventListener('dart-ko', visaKo);
 route();
+markeraOsedda();
 if (isLoggedIn() && ko().length) skickaKo();

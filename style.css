@@ -150,3 +150,9 @@ table.cricket tr.poang td, table.cricket tr:last-child td { font-size: 16px; }
 .vaxel small { display: block; color: var(--text-3); font-size: 13px; }
 .msg.ok { color: var(--gron-2); }
 #inloggad a { color: var(--text-2); }
+.tabs a.tab-ikon { padding: 8px 10px; position: relative; }
+.tab-ikon.osedd::after { content: ""; position: absolute; top: 8px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--rod-2); }
+.ny-dag h2 { font-size: 16px; color: var(--text-2); margin: 16px 0 6px; }
+.ny-lista { margin: 0; padding-left: 20px; }
+.ny-lista li { margin: 0 0 8px; }
+.ny-ver { color: var(--text-3); font-size: 13px; white-space: nowrap; }

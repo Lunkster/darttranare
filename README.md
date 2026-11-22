@@ -21,6 +21,7 @@ Egen träningsapp för dart som ersätter My Dart Training, med synk mellan tele
 | `spela.js` | Starta och spela – alla speltyper, pågående spel sparas lokalt |
 | `historik.js` | Alla spel, ta bort |
 | `jag.js` | Min sida: byta alias, välja vad som visas under spelet |
+| `nyheter.js`, `nyheter.json` | Nytt i appen (i-knappen) – `nyheter.json` görs från Obsidian-anteckningen *Darttränaren - Nyheter* |
 | `statistik.js`, `diagram.js` | Statistik per spelare med egna SVG-diagram |
 | `lib.js` | Supabase-anrop (schema `dart`), inloggning, offlinekö, format |
 | `sw.js`, `manifest.webmanifest`, `ikon*` | Installerbar app, offline |

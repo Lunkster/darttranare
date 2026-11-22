@@ -1,0 +1,15 @@
+[
+ {
+  "datum": "2026-11-22",
+  "punkter": [
+   "**Nytt i appen:** tryck på ⓘ uppe till höger för att se vad som har ändrats. (v0.3.1)",
+   "**Min sida:** tryck på ditt namn längst ner för att byta namn och välja vad som visas under spelet. (v0.3.0)",
+   "**Större knappar** och bara poängen i fokus under spelet – snitt och pilar slår du på själv. (v0.3.0)",
+   "**Egna konton:** logga in med e-post och lösenord – fråga Henrik om du vill ha ett. Alla ser allas spel, bara de som var med kan ta bort ett spel. (v0.2.0)",
+   "**Historiken från My Dart Training** finns med, märkt MDT. (v0.1.0)",
+   "**Statistik** per spelare: X01-snitt, utgångsprocent, cricket-MPR, övningarna över tid och träff per dubbel. (v0.1.0)",
+   "**Utan nät** sparas spelet i appen och skickas när nätet är tillbaka. (v0.1.0)",
+   "**Darttränaren** finns: X01, Cricket, Bob's 27, Runt dubblarna, JDC Challenge och Pilar mot ett mål – för en eller flera spelare. (v0.1.0)"
+  ]
+ }
+]
