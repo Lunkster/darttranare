@@ -1,0 +1,18 @@
+{
+  "id": "/darttranare/",
+  "name": "Darttränaren",
+  "short_name": "Dart",
+  "description": "Dartträning: X01, cricket och övningar med statistik",
+  "lang": "sv",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1512",
+  "theme_color": "#0f1512",
+  "icons": [
+    { "src": "ikon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "ikon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "ikon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "ikon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

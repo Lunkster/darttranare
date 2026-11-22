@@ -1,0 +1,145 @@
+// Spellogik utan sidan – regler, poäng och utgångar. Testas i tests/logik.html.
+// Segment skrivs som i databasen: 'S20', 'D20', 'T20', 'S25' (25), 'D25' (bull), 'M' (miss).
+// Mål: '20' (valfritt segment på 20), 'D8' (dubbel 8), 'D25' (bull), '25' (25 eller bull).
+
+export const TYPER = {
+  x01: { namn: 'X01', kort: 'X01' },
+  cricket: { namn: 'Cricket', kort: 'Cricket' },
+  bobs27: { namn: "Bob's 27", kort: "Bob's 27" },
+  dubbelrunda: { namn: 'Runt dubblarna', kort: 'Dubblar' },
+  jdc: { namn: 'JDC Challenge', kort: 'JDC' },
+  scoring: { namn: 'Pilar mot ett mål', kort: 'Mål' },
+};
+
+export const nummer = (seg) => (seg === 'M' ? 0 : Number(seg.slice(1)));
+export const mult = (seg) => ({ S: 1, D: 2, T: 3 }[seg[0]] ?? 0);
+export const varde = (seg) => nummer(seg) * mult(seg);
+export const malNummer = (mal) => Number(String(mal).replace(/^[DT]/, ''));
+export const malMult = (mal) => ({ D: 2, T: 3 }[String(mal)[0]] ?? null);
+export const traff = (mal, seg) => seg !== 'M' && nummer(seg) === malNummer(mal) && (malMult(mal) === null || mult(seg) === malMult(mal));
+export const segText = (seg) => (seg === 'M' ? 'Miss' : seg === 'D25' ? 'Bull' : seg === 'S25' ? '25' : seg);
+export const malText = (mal) => (mal === 'D25' ? 'Bull' : mal === '25' ? 'Bull/25' : String(mal));
+
+// ---------- X01 ----------
+const OMOJLIGA = new Set([163, 166, 169, 172, 173, 175, 176, 178, 179]);
+const EJ_UTGANG = new Set([159, 162, 163, 165, 166, 168, 169]);
+export const giltigtBesok = (p) => Number.isInteger(p) && p >= 0 && p <= 180 && !OMOJLIGA.has(p);
+export const kanGaUt = (kvar) => kvar >= 2 && kvar <= 170 && !EJ_UTGANG.has(kvar);
+
+// Ett besök som totalsumma med dubbel ut. Returnerar {fel} eller {kvar, bust, ut}.
+export function besok(kvar, poang) {
+  if (!giltigtBesok(poang)) return { fel: `${poang} går inte att få med tre pilar.` };
+  const ny = kvar - poang;
+  if (ny === 0 && !kanGaUt(kvar)) return { fel: `${kvar} går inte att gå ut på.` };
+  if (ny < 0 || ny === 1) return { kvar, bust: true, ut: false };
+  return { kvar: ny, bust: false, ut: ny === 0 };
+}
+
+// Fråga om pilar på dubbel när besöket började på en utgång eller slutade nära en.
+export const fragaDubbel = (kvarFore, res) => kvarFore <= 170 && (res.ut || res.bust || res.kvar <= 50);
+
+// Föreslagen utgång (högst 3 pilar, sista på dubbel). null om det inte går.
+const DUBBLAR = [...Array.from({ length: 20 }, (_, i) => `D${i + 1}`), 'D25'];
+const ALLA = [...Array.from({ length: 20 }, (_, i) => [`S${i + 1}`, `D${i + 1}`, `T${i + 1}`]).flat(), 'S25', 'D25'];
+const DUBBEL_RANG = ['D20', 'D16', 'D18', 'D12', 'D10', 'D8', 'D19', 'D14', 'D17', 'D15', 'D13', 'D11', 'D9', 'D6', 'D4', 'D7', 'D5', 'D3', 'D2', 'D1', 'D25'];
+const kostnad = (seg) => (seg[0] === 'S' ? (seg === 'S25' ? 6 : 1) : seg[0] === 'T' ? 3 + (20 - nummer(seg)) / 10 : 5);
+const utgangCache = new Map();
+export function utgang(kvar, pilar = 3) {
+  const nyckel = `${kvar}/${pilar}`;
+  if (utgangCache.has(nyckel)) return utgangCache.get(nyckel);
+  let bast = null, bastK = Infinity;
+  const prova = (forst) => {
+    const rest = kvar - forst.reduce((a, s) => a + varde(s), 0);
+    const d = rest === 50 ? 'D25' : (rest % 2 === 0 && rest >= 2 && rest <= 40 ? `D${rest / 2}` : null);
+    if (!d) return;
+    const k = forst.length * 100 + DUBBEL_RANG.indexOf(d) + forst.reduce((a, s) => a + kostnad(s), 0);
+    if (k < bastK) { bastK = k; bast = [...forst, d]; }
+  };
+  if (kvar <= 170 && kvar >= 2) {
+    prova([]);
+    if (!bast && pilar >= 2) ALLA.forEach((a) => prova([a]));
+    if (!bast && pilar >= 3) ALLA.forEach((a) => ALLA.forEach((b) => { if (varde(a) >= varde(b)) prova([a, b]); }));
+  }
+  utgangCache.set(nyckel, bast);
+  return bast;
+}
+
+// Statistik för en spelare i ett pågående eller färdigt X01-leg (rundor = [{poang, pilar}]).
+export function x01Snitt(rundor) {
+  const p = rundor.reduce((a, r) => a + r.poang, 0), n = rundor.reduce((a, r) => a + (r.pilar ?? 3), 0);
+  return n ? (p * 3) / n : null;
+}
+
+// ---------- övningar med en rad per pil ----------
+const DUBBELMAL = [...Array.from({ length: 20 }, (_, i) => `D${i + 1}`), 'D25'];
+const tre = (m) => [m, m, m];
+const iTre = (lista) => lista.reduce((ut, m, i) => { if (i % 3 === 0) ut.push([]); ut[ut.length - 1].push(m); return ut; }, []);
+
+// Spelplan: lista av rundor, varje runda = mål för pil 1–3.
+export function plan(typ, inst = {}) {
+  if (typ === 'bobs27' || typ === 'dubbelrunda') return DUBBELMAL.map(tre);
+  if (typ === 'jdc') return [...[10, 11, 12, 13, 14, 15].map((n) => tre(String(n))), ...iTre(DUBBELMAL), ...[15, 16, 17, 18, 19, 20].map((n) => tre(String(n)))];
+  if (typ === 'scoring') return iTre(Array(Number(inst.pilar) || 100).fill(String(inst.mal ?? '20')));
+  return [];
+}
+
+// Knappar för en pil mot ett mål
+export function knappar(mal) {
+  mal = String(mal);
+  if (/^[DT]/.test(mal)) return [{ seg: mal, text: 'Träff' }, { seg: 'M', text: 'Miss' }];
+  if (mal === '25') return [{ seg: 'S25', text: '25' }, { seg: 'D25', text: 'Bull' }, { seg: 'M', text: 'Miss' }];
+  return [{ seg: `S${mal}`, text: 'Singel' }, { seg: `D${mal}`, text: 'Dubbel' }, { seg: `T${mal}`, text: 'Trippel' }, { seg: 'M', text: 'Miss' }];
+}
+
+// Poäng per runda och totalt – samma regler som vyn dart.v_resultat.
+export function rundPoang(typ, mal, segs) {
+  const tr = segs.filter((s) => traff(mal, s));
+  const n = malNummer(mal);
+  if (typ === 'bobs27') return tr.length ? tr.length * 2 * n : -2 * n;
+  if (typ === 'jdc') {
+    if (String(mal).startsWith('D')) return 50 * tr.length;
+    const shanghai = [1, 2, 3].every((m) => tr.some((s) => mult(s) === m));
+    return n * tr.reduce((a, s) => a + mult(s), 0) + (shanghai ? 100 : 0);
+  }
+  if (typ === 'scoring') return tr.reduce((a, s) => a + varde(s), 0);
+  return tr.length;
+}
+
+// pilar = [{runda, nr, mal, segment}] → {poang, traffar, pilar, marks}
+export function ovningSumma(typ, pilar) {
+  const rundor = new Map();
+  pilar.forEach((p) => { if (!rundor.has(p.runda)) rundor.set(p.runda, []); rundor.get(p.runda).push(p); });
+  let poang = typ === 'bobs27' ? 27 : 0;
+  for (const r of rundor.values()) {
+    if (typ === 'jdc' && String(r[0].mal).startsWith('D')) poang += 50 * r.filter((p) => traff(p.mal, p.segment)).length;
+    else poang += rundPoang(typ, r[0].mal, r.map((p) => p.segment));
+  }
+  const tr = pilar.filter((p) => traff(p.mal, p.segment));
+  return { poang: typ === 'dubbelrunda' ? null : poang, traffar: tr.length, pilar: pilar.length, marks: tr.reduce((a, p) => a + mult(p.segment), 0) };
+}
+
+// Bob's 27 tar slut när poängen når noll eller lägre
+export const ovningSlut = (typ, summa) => typ === 'bobs27' && summa.poang <= 0;
+
+// ---------- Cricket ----------
+export const CRICKET = [20, 19, 18, 17, 16, 15, 25];
+
+// spelare = [id, …], pilar = [{spelare_id, segment}] i kastordning → läge per spelare och ev. vinnare
+export function cricketLage(spelare, pilar) {
+  const lage = new Map(spelare.map((id) => [id, { marks: Object.fromEntries(CRICKET.map((n) => [n, 0])), poang: 0, allaMarks: 0 }]));
+  let vinnare = null;
+  for (const p of pilar) {
+    if (vinnare !== null) break;
+    const n = nummer(p.segment), m = mult(p.segment), l = lage.get(p.spelare_id);
+    if (!CRICKET.includes(n)) continue;
+    for (let i = 0; i < m; i++) {
+      l.allaMarks++;
+      if (l.marks[n] < 3) l.marks[n]++;
+      else if (spelare.some((o) => o !== p.spelare_id && lage.get(o).marks[n] < 3)) l.poang += n;
+    }
+    const stangt = CRICKET.every((x) => l.marks[x] >= 3);
+    if (stangt && spelare.every((o) => o === p.spelare_id || lage.get(o).poang <= l.poang)) vinnare = p.spelare_id;
+  }
+  return { lage, vinnare };
+}
+export const marksText = (m) => ['', '/', 'X', 'Ⓧ'][Math.min(3, m)];

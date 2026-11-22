@@ -1,0 +1,146 @@
+/* Darttränaren – mörk tavla, grönt och rött som på en darttavla. Mobil först. */
+[hidden] { display: none !important; }
+:root {
+  color-scheme: dark;
+  --bg: #0f1512;
+  --kort: #18211c;
+  --kort-2: #212c26;
+  --linje: #33423a;
+  --text: #eef3ef;
+  --text-2: #b8c6bd;
+  --text-3: #83958a;
+  --gron: #2f9e5b;
+  --gron-2: #46c077;
+  --rod: #d8423a;
+  --rod-2: #ff6b61;
+  --guld: #e3b341;
+  --fel: #ff8a7a;
+  --radie: 12px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 16px; line-height: 1.45; min-height: 100vh; display: flex; flex-direction: column; }
+a { color: var(--gron-2); }
+h1 { font-size: 24px; margin: 0 0 12px; }
+h2 { font-size: 19px; margin: 0 0 10px; }
+h3 { font-size: 15px; margin: 16px 0 6px; color: var(--text-2); }
+.muted { color: var(--text-3); }
+.liten { font-size: 13px; }
+.center { text-align: center; }
+.msg { min-height: 1.4em; color: var(--fel); margin: 8px 0; }
+.forklaring { color: var(--text-3); font-size: 13px; margin: 4px 0 0; }
+
+.topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top)); background: var(--bg); border-bottom: 2px solid var(--rod); }
+.brand { display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; font-weight: 700; font-size: 18px; }
+.logo { width: 32px; height: 32px; }
+.tabs { display: flex; gap: 2px; }
+.tabs a { color: var(--text-2); text-decoration: none; font-weight: 600; padding: 8px 12px; border-radius: 999px; min-height: 44px; display: inline-flex; align-items: center; font-size: 15px; }
+.tabs a.active { background: var(--gron); color: #fff; }
+@media (max-width: 420px) { .brand span { display: none; } .tabs a { padding: 8px 10px; } }
+
+main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: 12px; }
+.foot { text-align: center; color: var(--text-3); font-size: 13px; padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+.card { background: var(--kort); border-radius: var(--radie); padding: 16px; margin-bottom: 12px; }
+.card.fel h2 { color: var(--fel); }
+.card.pagaende { border: 2px solid var(--guld); }
+
+.btn { font: inherit; font-weight: 600; color: var(--text); background: var(--kort-2); border: 1px solid var(--linje); border-radius: 10px;
+  padding: 10px 16px; min-height: 44px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn.primar { background: var(--gron); border-color: var(--gron); color: #fff; }
+.btn.fara { background: transparent; border-color: var(--rod); color: var(--rod-2); }
+.btn.liten { min-height: 36px; padding: 6px 12px; font-size: 14px; }
+.btn.stor { min-height: 64px; font-size: 22px; }
+#starta { width: 100%; margin-top: 8px; }
+.rad { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.installera { margin: 0 8px; min-height: 32px; padding: 4px 10px; }
+
+.val { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.chip { font: inherit; font-size: 15px; color: var(--text-2); background: var(--kort-2); border: 1px solid var(--linje); border-radius: 999px; padding: 8px 14px; min-height: 40px; cursor: pointer; }
+.chip.vald { background: var(--gron); border-color: var(--gron); color: #fff; }
+.chip b { background: rgba(0,0,0,.25); border-radius: 999px; padding: 0 6px; }
+input { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--linje); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
+#nyspelare { margin-top: 8px; }
+#nyspelare input { flex: 1; min-width: 0; }
+.login { max-width: 360px; margin: 24px auto; display: flex; flex-direction: column; gap: 8px; }
+
+/* spelyta */
+.spelyta { display: flex; flex-direction: column; gap: 10px; }
+.spelhuvud { display: flex; justify-content: space-between; align-items: center; color: var(--text-3); font-size: 14px; }
+.tavla { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.spelarkort { background: var(--kort); border-radius: var(--radie); padding: 10px 12px; border: 2px solid transparent; }
+.spelarkort.tur { border-color: var(--gron-2); }
+.spelarkort.vann { border-color: var(--guld); }
+.spelarkort .namn { font-weight: 700; display: flex; justify-content: space-between; }
+.spelarkort .kvar { font-size: 44px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.spelarkort.liten { padding: 8px 10px; }
+.legs { background: var(--guld); color: #000; border-radius: 999px; padding: 0 8px; font-size: 14px; }
+.forslag { color: var(--guld); font-weight: 700; margin-top: 2px; }
+.tur-text { margin: 0; text-align: center; color: var(--text-2); font-weight: 600; }
+.stallning { font-size: 18px; }
+.display { background: var(--kort); border-radius: var(--radie); text-align: center; font-size: 44px; font-weight: 800; padding: 6px; font-variant-numeric: tabular-nums; }
+.display.tom { color: var(--text-3); font-weight: 400; font-size: 28px; padding: 13px; }
+.knappar { display: grid; gap: 8px; }
+.knappar.knappsats { grid-template-columns: repeat(3, 1fr); }
+.knappar.knappsats .btn { min-height: 60px; font-size: 26px; }
+.knappar.tva { grid-template-columns: repeat(2, 1fr); }
+.knappar.tre { grid-template-columns: repeat(3, 1fr); }
+.knappar.fyra { grid-template-columns: repeat(2, 1fr); }
+.knappar .btn.stor { min-height: 84px; }
+.traffknapp { background: var(--gron); border-color: var(--gron); color: #fff; }
+.miss { background: var(--kort-2); color: var(--text-2); }
+.fraga { text-align: center; font-size: 20px; font-weight: 700; margin: 4px 0; }
+.malvy { text-align: center; background: var(--kort); border-radius: var(--radie); padding: 10px; }
+.malvy .mal { font-size: 64px; font-weight: 800; line-height: 1.1; color: var(--rod-2); }
+.malvy .summa { color: var(--text-2); font-weight: 600; }
+.pilrad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pil { background: var(--kort); border-radius: 10px; text-align: center; padding: 8px; min-height: 42px; font-weight: 700; color: var(--text-3); }
+.pil.traff { color: var(--gron-2); }
+
+/* cricket */
+table.cricket { width: 100%; border-collapse: collapse; background: var(--kort); border-radius: var(--radie); overflow: hidden; text-align: center; }
+table.cricket th, table.cricket td { padding: 1px 6px; border-bottom: 1px solid var(--linje); }
+table.cricket th.tur { color: var(--gron-2); }
+table.cricket td { font-size: 19px; font-weight: 800; }
+table.cricket td.m3 { color: var(--gron-2); }
+table.cricket tr.poang td, table.cricket tr:last-child td { font-size: 16px; }
+.knappar.cricketknappar { grid-template-columns: repeat(3, 1fr); }
+.cricketknappar .btn { min-height: 44px; font-size: 18px; padding: 6px; }
+.cricketknappar .btn.dubbel { background: #1f3a2a; }
+.cricketknappar .btn.trippel { background: #3a1f1f; }
+.cricketknappar .miss { grid-column: 1 / -1; min-height: 56px; }
+
+/* resultat och tabeller */
+.tabell { width: 100%; border-collapse: collapse; margin: 10px 0; font-variant-numeric: tabular-nums; }
+.tabell th, .tabell td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--linje); }
+.tabell th:first-child, .tabell td:first-child { text-align: left; }
+.resultat { margin: 12px 0; }
+.malrutor { display: flex; flex-wrap: wrap; gap: 4px; }
+.malcell { background: var(--kort-2); border-radius: 6px; padding: 2px 6px; font-size: 13px; display: inline-flex; flex-direction: column; align-items: center; min-width: 38px; }
+.malcell.traff { background: #1f3a2a; color: var(--gron-2); }
+.malcell small { color: var(--text-3); font-size: 11px; }
+.nycklar { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.nyckel { background: var(--kort-2); border-radius: 10px; padding: 8px; text-align: center; }
+.nyckel .v { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.nyckel .t { font-size: 12px; color: var(--text-3); }
+
+/* historik */
+.hrad { border-bottom: 1px solid var(--linje); padding: 8px 0; }
+.hrad summary { cursor: pointer; list-style: none; }
+.hrad summary::-webkit-details-marker { display: none; }
+.hrad .tid { color: var(--text-3); font-size: 13px; font-variant-numeric: tabular-nums; }
+.hres { display: block; color: var(--text-2); font-size: 14px; }
+.etikett { font-size: 11px; background: var(--kort-2); border: 1px solid var(--linje); border-radius: 6px; padding: 0 5px; color: var(--text-3); }
+.kolista { border: 1px dashed var(--guld); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; }
+
+/* diagram */
+.diagram { width: 100%; height: auto; display: block; }
+.diagram .rutnat { stroke: var(--linje); stroke-width: 1; }
+.diagram .axel { fill: var(--text-3); font-size: 11px; }
+.diagram .punkt { fill: var(--gron-2); }
+.diagram .medel { fill: none; stroke: var(--guld); stroke-width: 2; }
+.diagram .spar { fill: var(--kort-2); }
+.diagram .stapel { fill: var(--gron); }

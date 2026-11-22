@@ -1,0 +1,8 @@
+# Personuppgifter, backuper och genererade filer ska inte in i repot
+*.mdt
+import/ut/
+*.sql.ut
+*.csv
+.env
+.claude/
+__pycache__/

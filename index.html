@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1512">
+  <title>Darttränaren</title>
+  <link rel="icon" href="ikon.svg?v=0.1.0" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Dart">
+  <link rel="stylesheet" href="style.css?v=0.1.0">
+</head>
+<body>
+  <header class="topbar">
+    <a href="#/" class="brand" aria-label="Till start">
+      <img src="ikon.svg?v=0.1.0" alt="" class="logo" aria-hidden="true"><span>Dart</span>
+    </a>
+    <nav class="tabs" aria-label="Huvudmeny">
+      <a href="#/" data-route="spela">Spela</a>
+      <a href="#/historik" data-route="historik">Historik</a>
+      <a href="#/statistik" data-route="statistik">Statistik</a>
+    </nav>
+  </header>
+
+  <main id="app" aria-live="polite">
+    <p class="muted center">Laddar …</p>
+  </main>
+
+  <footer class="foot">
+    <span id="kostatus"></span>
+    <button type="button" class="btn installera" id="installera" hidden>Installera som app</button>
+    <span id="version">v0.1.0</span> · <a href="#/loggaut" id="loggaut" hidden>Logga ut</a>
+  </footer>
+
+  <script type="module" src="app.js?v=0.1.0"></script>
+  <script>
+    if ('serviceWorker' in navigator && !location.pathname.includes('/tests/')) navigator.serviceWorker.register('sw.js').catch(() => {});
+    // Knapp för att installera appen (Chrome, Edge, Android). Visas bara när webbläsaren erbjuder installation.
+    let installation = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault(); installation = e; document.getElementById('installera').hidden = false;
+    });
+    document.getElementById('installera').addEventListener('click', async () => {
+      if (!installation) return;
+      installation.prompt(); await installation.userChoice; installation = null;
+      document.getElementById('installera').hidden = true;
+    });
+    window.addEventListener('appinstalled', () => { document.getElementById('installera').hidden = true; });
+  </script>
+</body>
+</html>
