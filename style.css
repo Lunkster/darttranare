@@ -260,7 +260,10 @@ button.hemkort { width: 100%; text-align: left; font: inherit; border: 0; border
 
 /* Tävlingar från klubbappen – rosa som klubbens emblem */
 .kalla { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); margin-left: 6px; }
-.delrubrik { margin: 4px 0 8px; } .delrubrik.klubb { margin-top: 18px; color: #da4ca2; } .delrubrik.klubb .kalla { color: #da4ca2; }
+.delrubrik { margin: 4px 0 8px; }
+.infoknapp { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin: -8px 0 -8px 2px; padding: 0; border: 0; background: none; color: inherit; vertical-align: middle; cursor: pointer; }
+.infoknapp[aria-expanded="true"] { opacity: .6; }
+.klubbinfo { margin: -4px 0 8px; } .delrubrik.klubb { margin-top: 18px; color: #da4ca2; } .delrubrik.klubb .kalla { color: #da4ca2; }
 .klubbnycklar .nyckel { box-shadow: inset 3px 0 0 #da4ca2; }
 .diagram .punkt.klubb { fill: #da4ca2; stroke: var(--kort); stroke-width: 1.5; }
 .prick { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--gron-2); vertical-align: middle; }

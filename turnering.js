@@ -1,8 +1,8 @@
 // Turneringar: lista, skapa (bara admin), tabell eller utslagsträd, matcher att spela.
 // Matchresultat och tabell räknas i spel.js ur vyn v_turnering_leg – inget lagras.
-import { api, rpc, esc, fmt, jag, arAdmin, minns, uuid, datum } from './lib.js?v=0.7.2';
-import { serieSchema, utslagSchema, matchlagen, turneringstabell } from './spel.js?v=0.7.2';
-import { startaTurneringsmatch, startaDistans, gaMed } from './spela.js?v=0.7.2';
+import { api, rpc, esc, fmt, jag, arAdmin, minns, uuid, datum } from './lib.js?v=0.7.3';
+import { serieSchema, utslagSchema, matchlagen, turneringstabell } from './spel.js?v=0.7.3';
+import { startaTurneringsmatch, startaDistans, gaMed } from './spela.js?v=0.7.3';
 
 const formText = (t) => `${t.format === 'serie' ? (t.installningar?.dubbelmote ? 'Serie, dubbelmöte' : 'Serie') : 'Utslag'} · ${t.typ === 'x01' ? t.installningar?.start ?? 501 : 'Cricket'} · först till ${t.installningar?.forst_till ?? 1}`;
 const rundnamn = (r, antal) => ({ 0: 'Final', 1: 'Semifinal', 2: 'Kvartsfinal' }[antal - r] ?? `Runda ${r}`);

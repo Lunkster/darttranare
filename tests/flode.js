@@ -1,7 +1,7 @@
 // Hela flödet mot attrappen: inloggning, X01 med bust och utgång, ogiltig poäng, Bob's 27, solocricket med ångra,
 // offline-kö, historik med ta bort och statistik. Kör: tests/attrapp.html?flode – slutar med "fel: 0".
-import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.7.2';
-import { ko, minns } from '../lib.js?v=0.7.2';
+import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.7.3';
+import { ko, minns } from '../lib.js?v=0.7.3';
 
 const ut = document.getElementById('testut');
 let fel = 0;
@@ -111,7 +111,7 @@ try {
   kolla('historik visar snitt', text('#app').includes('snitt'));
   await klick(`[data-tabort="${b.id}"]`); await vanta(300);
   kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 3);
-  const { rpc } = await import('../lib.js?v=0.7.2');
+  const { rpc } = await import('../lib.js?v=0.7.3');
   let nekad = false; try { await rpc('ta_bort_spel', { sid: 'bo-spel-1' }); } catch { nekad = true; }
   kolla('servern nekar att ta bort Bos spel', nekad && db.spel.some((s) => s.id === 'bo-spel-1'));
   kolla('Annas spel är skapade av Anna', db.spel.filter((s) => s.id !== 'bo-spel-1').every((s) => s.skapad_av === 'u-anna'));
@@ -229,6 +229,9 @@ try {
   kolla('klubb: serien med länk', [...document.querySelectorAll('#klubblistor a')].some((a) => a.href.endsWith('#/serien/ds1')) && text('#klubblistor').includes('Bankeryd B'));
   const rosa = document.querySelectorAll('#x01graf .punkt.klubb'), grona = document.querySelectorAll('#x01graf .punkt:not(.klubb)');
   kolla('klubb: rosa punkter i X01-grafen', rosa.length === 10 && grona.length > 0 && !!$('#x01graf .prick.klubb'), `${rosa.length} rosa, ${grona.length} gröna`);
+  kolla('klubb: källan dold bakom i-knappen', $('#x01kort .klubbinfo')?.hidden === true && !text('#klubblistor').includes('hämtas'));
+  await klick('#x01kort [data-klubbinfo]');
+  kolla('klubb: i-knappen visar källan', !$('#x01kort .klubbinfo').hidden && $('#x01kort .klubbinfo a')?.href.endsWith('#/spelare/7') && text('#x01kort .klubbinfo').includes('torsdag och söndag'));
   await klick('#klubblistor [data-fler]');
   kolla('klubb: visa alla tävlingar', !$('#klubblistor .fler').hidden);
   localStorage.setItem('bdc-session', JSON.stringify({ access_token: 'gammal', refresh_token: 'r', expires_at: Date.now() / 1000 + 3600 }));

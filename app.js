@@ -1,12 +1,12 @@
 // Router, inloggning, spelarlistan och offlinekön.
-import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.7.2';
-import { renderStart, renderSpel } from './spela.js?v=0.7.2';
-import { renderHistorik } from './historik.js?v=0.7.2';
-import { renderStatistik } from './statistik.js?v=0.7.2';
-import { renderJag } from './jag.js?v=0.7.2';
-import { renderNyheter, markeraOsedda } from './nyheter.js?v=0.7.2';
-import { renderHem } from './hem.js?v=0.7.2';
-import { renderTurneringar, renderTurnering, renderNyTurnering } from './turnering.js?v=0.7.2';
+import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.7.3';
+import { renderStart, renderSpel } from './spela.js?v=0.7.3';
+import { renderHistorik } from './historik.js?v=0.7.3';
+import { renderStatistik } from './statistik.js?v=0.7.3';
+import { renderJag } from './jag.js?v=0.7.3';
+import { renderNyheter, markeraOsedda } from './nyheter.js?v=0.7.3';
+import { renderHem } from './hem.js?v=0.7.3';
+import { renderTurneringar, renderTurnering, renderNyTurnering } from './turnering.js?v=0.7.3';
 
 const app = document.getElementById('app');
 

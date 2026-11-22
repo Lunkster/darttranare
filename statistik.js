@@ -1,8 +1,8 @@
 // Statistik per spelare: X01, cricket, övningarna och träff per dubbel. Allt räknas i vyerna.
-import { api, esc, fmt, proc, minns, jag } from './lib.js?v=0.7.2';
-import { linje, staplar } from './diagram.js?v=0.7.2';
-import { malText } from './spel.js?v=0.7.2';
-import { klubbInloggad, hamtaKlubb, klubbNycklar, klubbPunkter, klubbListor, kopplaKlubbListor, loggaInKlubb } from './klubb.js?v=0.7.2';
+import { api, esc, fmt, proc, minns, jag } from './lib.js?v=0.7.3';
+import { linje, staplar } from './diagram.js?v=0.7.3';
+import { malText } from './spel.js?v=0.7.3';
+import { klubbInloggad, hamtaKlubb, klubbNycklar, klubbPunkter, klubbListor, kopplaKlubbListor, loggaInKlubb, klubbInfoKnapp, klubbInfo, kopplaKlubbInfo } from './klubb.js?v=0.7.3';
 
 const summa = (rader, f) => rader.reduce((a, r) => a + Number(r[f] ?? 0), 0);
 const max = (rader, f) => (rader.length ? Math.max(...rader.map((r) => Number(r[f] ?? -Infinity))) : null);
@@ -38,7 +38,7 @@ export async function renderStatistik(el, alla) {
       ${nyckel(`${x01.filter((r) => r.vinnare).length}/${x01.length}`, 'vunna legs')}
       ${nyckel(`${summa(x01, 'plus100')} / ${summa(x01, 'plus140')} / ${summa(x01, 'maxar')}`, '100+ / 140+ / 180')}
     </div>` : '<p class="muted">Inga X01-legs.</p>'}
-    ${klubbBit ? `<h3 class="delrubrik klubb">Tävling <span class="kalla">Bankeryds dartklubb</span></h3><div id="klubbnycklar">${klubbBit}</div>` : ''}
+    ${klubbBit ? `<h3 class="delrubrik klubb">Tävling <span class="kalla">Bankeryds dartklubb</span>${spelaren?.bdc_id ? klubbInfoKnapp : ''}</h3>${spelaren?.bdc_id ? klubbInfo(spelaren.bdc_id) : ''}<div id="klubbnycklar">${klubbBit}</div>` : ''}
     <h3>Snitt</h3><div id="x01graf">${graf()}</div>
     <div id="klubblistor"></div>` : `<p class="muted">Inga X01-legs.</p>${klubbBit ? `<div id="klubbnycklar">${klubbBit}</div>` : ''}`;
 
@@ -104,5 +104,6 @@ export async function renderStatistik(el, alla) {
       if (n) n.innerHTML = e.klubb ? loggaInKlubb : `<p class="muted">Klubbappen svarar inte just nu (${esc(e.message)}).</p>`;
     });
   }
+  kopplaKlubbInfo(el);
   el.querySelectorAll('[data-spelare]').forEach((b) => b.onclick = () => { minns('statspelare', Number(b.dataset.spelare)); renderStatistik(el, alla); });
 }

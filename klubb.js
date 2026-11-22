@@ -1,7 +1,7 @@
 // Klubbappen för Bankeryds dartklubb (bdc-statistik): tävlingar på n01darts.com och distriktsserien.
 // Inget kopieras hit – Darttränaren läser direkt med klubbappens inloggning, som ligger på samma
 // webbadress (lunkster.github.io) under nyckeln bdc-session. Är man inte inloggad där visas en länk dit.
-import { esc, fmt } from './lib.js?v=0.7.2';
+import { esc, fmt } from './lib.js?v=0.7.3';
 
 export const KLUBB_APP = 'https://lunkster.github.io/bdc-statistik/';
 const URL_ = 'https://xkfjbrkrtetkbjugresq.supabase.co';
@@ -90,8 +90,16 @@ export function klubbListor({ bdcId, rader, serie }) {
     <div class="tabellruta"><table class="tabell klubbtabell"><tr><th>Division</th><th>Singlar</th><th>Dubblar</th><th>Snitt</th></tr>
     ${serie.map((r) => `<tr><td>${lank(`serien/${encodeURIComponent(r.tdid)}`, esc(r.division ?? 'Serien'))}<small>${esc(r.lag ?? '')}</small></td>
       <td>${r.singlar_vunna}–${r.singlar - r.singlar_vunna}</td><td>${r.dubblar_vunna}–${r.dubblar - r.dubblar_vunna}</td><td>${fmt(r.snitt, 1)}</td></tr>`).join('')}</table></div>` : '';
-  return `${tavlHtml}${serieHtml}
-    <p class="forklaring">Tävlingarna kommer från ${lank(`spelare/${bdcId}`, 'klubbappen')} (klubbens tävlingar på n01darts.com, hämtas torsdag och söndag). Tryck på en tävling för att öppna den där.</p>`;
+  return `${tavlHtml}${serieHtml}`;
+}
+
+// Var tävlingarna kommer ifrån – dolt bakom i-knappen vid rubriken Tävling
+const I_IKON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/></svg>';
+export const klubbInfoKnapp = `<button type="button" class="infoknapp" data-klubbinfo aria-expanded="false" aria-label="Var kommer tävlingarna ifrån?" title="Var kommer tävlingarna ifrån?">${I_IKON}</button>`;
+export const klubbInfo = (bdcId) => `<p class="forklaring klubbinfo" hidden>Tävlingarna kommer från ${lank(`spelare/${bdcId}`, 'klubbappen')} för Bankeryds dartklubb (klubbens tävlingar på n01darts.com, hämtas dit torsdag och söndag). Tryck på en tävling för att öppna den där.</p>`;
+export function kopplaKlubbInfo(el) {
+  const b = el.querySelector('[data-klubbinfo]'), t = el.querySelector('.klubbinfo');
+  if (b && t) b.onclick = () => { t.hidden = !t.hidden; b.setAttribute('aria-expanded', String(!t.hidden)); };
 }
 export function kopplaKlubbListor(el) {
   el.querySelector('[data-fler]')?.addEventListener('click', (e) => { el.querySelector('.klubbtabell .fler').hidden = false; e.target.remove(); });
