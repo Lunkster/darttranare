@@ -144,3 +144,4 @@ table.cricket tr.poang td, table.cricket tr:last-child td { font-size: 16px; }
 .diagram .medel { fill: none; stroke: var(--guld); stroke-width: 2; }
 .diagram .spar { fill: var(--kort-2); }
 .diagram .stapel { fill: var(--gron); }
+.gast { font-size: 11px; opacity: .7; }

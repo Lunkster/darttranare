@@ -26,7 +26,7 @@ NS = uuid.UUID('6f1d7c1e-3b0a-4d2e-9a51-6d6172740001')   # fast namnrymd för im
 TZ = ZoneInfo('Europe/Stockholm')
 URL = 'https://nlvgisjssbjethumvgdz.supabase.co'
 KEY = 'sb_publishable_3wzcVvDgcoupfWSqAis4eg_bz2e6jiG'
-KONTO = 'h.lundqvist+dart@gmail.com'
+KONTO = os.environ.get('DART_EPOST', 'h.lundqvist+dart@gmail.com')   # Henriks konto – importen kopplas till honom
 PROFIL = 'Henrik'   # Profile 1 i backupen = den som spelar soloövningarna
 NOT = 'Import från My Dart Training'
 NOT_REKO = NOT + ' – pilarnas ordning inom varje mål är återskapad'
@@ -191,7 +191,7 @@ def rest(metod, vag, data=None, token=None, profil=True):
 
 
 def skicka(spel_lista, namn):
-    kod = os.environ.get('DART_KOD') or sys.exit('Sätt DART_KOD (kontots lösenord, från lösenordshanteraren).')
+    kod = os.environ.get('DART_KOD') or sys.exit('Sätt DART_KOD (lösenordet till Henriks konto, från lösenordshanteraren).')
     tok = rest('POST', '/auth/v1/token?grant_type=password', {'email': KONTO, 'password': kod}, profil=False)['access_token']
     ids = {r['namn']: r['id'] for r in rest('GET', '/rest/v1/spelare?select=id,namn', token=tok)}
     nya = [n for n in namn if n not in ids]

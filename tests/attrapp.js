@@ -1,9 +1,24 @@
 // Attrapp för Supabase (PostgREST + auth) i minnet – testerna rör aldrig riktiga databasen.
 // Ersätter window.fetch innan appen laddas. Påhittade spelare. Vyerna räknas med samma regler som i SQL.
-import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.1.0';
+import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.2.0';
 
-export const db = { spelare: [{ id: 1, namn: 'Anna', aktiv: true, ordning: 1 }, { id: 2, namn: 'Bo', aktiv: true, ordning: 2 }], spel: [], nextId: 3, offline: false, logg: [] };
 export const KOD = 'kod123';
+export const EPOST = 'anna@exempel.se';
+const KONTON = { 'anna@exempel.se': { kod: KOD, sub: 'u-anna' }, 'bo@exempel.se': { kod: 'bo456', sub: 'u-bo' } };
+export const db = {
+  spelare: [{ id: 1, namn: 'Anna', aktiv: true, ordning: 1, anvandare: 'u-anna' }, { id: 2, namn: 'Bo', aktiv: true, ordning: 2, anvandare: 'u-bo' }],
+  // Ett spel som Bo spelat själv – Anna ser det men får inte ta bort det
+  spel: [{ id: 'bo-spel-1', typ: 'scoring', installningar: { mal: '20', pilar: 3 }, start: '2026-11-01T18:00:00Z', slut: '2026-11-01T18:05:00Z', match_id: null, kalla: 'app', skapad_av: 'u-bo',
+    spelare: [{ spelare_id: 2, ordning: 1, vinnare: false }], rundor: [], pilar: [{ spelare_id: 2, runda: 1, nr: 1, mal: '20', segment: 'T20' }, { spelare_id: 2, runda: 1, nr: 2, mal: '20', segment: 'M' }, { spelare_id: 2, runda: 1, nr: 3, mal: '20', segment: 'S20' }] }],
+  nextId: 3, offline: false, logg: [], inloggad: null,
+};
+// Samma regel som dart.far_andra: nytt spel, eget spel eller spel där man själv är med
+const farAndra = (sid) => {
+  const s = db.spel.find((x) => x.id === sid);
+  if (!s) return true;
+  const mig = db.spelare.find((p) => p.anvandare === db.inloggad)?.id;
+  return s.skapad_av === db.inloggad || s.spelare.some((x) => x.spelare_id === mig);
+};
 
 const v = {
   spelnamn: (id) => db.spelare.find((s) => s.id === id)?.namn,
@@ -67,7 +82,10 @@ window.fetch = async (url, init = {}) => {
   if (db.offline) throw new TypeError('Failed to fetch');
   const h = init.headers ?? {}, m = init.method ?? 'GET', body = init.body ? JSON.parse(init.body) : null;
   if (u.pathname.includes('/auth/')) {
-    return body.password === KOD || body.refresh_token ? svar({ access_token: 'x.e30.y', refresh_token: 'rt', expires_at: Date.now() / 1000 + 3600 }) : svar({ error: 'bad' }, 400);
+    const k = body.refresh_token ? { sub: db.inloggad ?? 'u-anna' } : KONTON[body.email];
+    if (!k || (!body.refresh_token && k.kod !== body.password)) return svar({ error: 'bad' }, 400);
+    db.inloggad = k.sub;
+    return svar({ access_token: `x.${btoa(JSON.stringify({ sub: k.sub }))}.y`, refresh_token: 'rt', expires_at: Date.now() / 1000 + 3600 });
   }
   if (h['Accept-Profile'] !== 'dart') return svar({ message: 'fel schema' }, 406);
   const t = u.pathname.replace('/rest/v1/', ''), q = u.searchParams;
@@ -79,13 +97,19 @@ window.fetch = async (url, init = {}) => {
   if (h['Content-Profile'] !== 'dart') return svar({ message: 'fel schema' }, 406);
   if (t === 'spelare' && m === 'POST') {
     if (db.spelare.some((s) => s.namn === body.namn)) return svar({ code: '23505', message: 'duplicate key' }, 409);
-    const s = { id: db.nextId++, aktiv: true, ...body }; db.spelare.push(s); return svar([s], 201);
+    if (body.anvandare && body.anvandare !== db.inloggad) return svar({ message: 'row-level security' }, 403);
+    const s = { id: db.nextId++, aktiv: true, anvandare: null, ...body }; db.spelare.push(s); return svar([s], 201);
   }
   if (t === 'rpc/spara_spel') {
     const p = structuredClone(body.p);
+    if (!farAndra(p.id)) return svar({ message: 'Ingen behörighet att ändra spelet' }, 400);
+    p.skapad_av = db.spel.find((s) => s.id === p.id)?.skapad_av ?? db.inloggad;
     db.spel = db.spel.filter((s) => s.id !== p.id); db.spel.push(p); return svar(null, 200);
   }
-  if (t === 'rpc/ta_bort_spel') { db.spel = db.spel.filter((s) => s.id !== body.sid); return svar(null, 204); }
+  if (t === 'rpc/ta_bort_spel') {
+    if (!farAndra(body.sid)) return svar({ message: 'Ingen behörighet att ta bort spelet' }, 400);
+    db.spel = db.spel.filter((s) => s.id !== body.sid); return svar(null, 204);
+  }
   return svar({ message: 'ej hanterat' }, 400);
 };
 window.attrapp = db;

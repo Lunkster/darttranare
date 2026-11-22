@@ -11,7 +11,8 @@ erDiagram
   spelare { smallint id PK
     text namn UK
     boolean aktiv
-    smallint ordning }
+    smallint ordning
+    uuid anvandare UK "konto i auth.users – null = gäst" }
   spel { uuid id PK "sätts i appen (offline)"
     text typ "x01 bobs27 dubbelrunda jdc scoring cricket"
     jsonb installningar "start, forst_till, leg, mal, pilar, mdt"
@@ -20,7 +21,8 @@ erDiagram
     uuid match_id "legs i samma match"
     text kalla "app eller mdt"
     text anteckning
-    timestamptz andrad }
+    timestamptz andrad
+    uuid skapad_av "kontot som sparade spelet först" }
   spel_spelare { uuid spel_id PK
     smallint spelare_id PK
     smallint ordning
@@ -41,9 +43,16 @@ erDiagram
     text segment "träff: S20 D20 T20 S25 D25 M" }
 ```
 
+## Konton och behörighet (04_konton.sql)
+Var och en har ett eget konto med rollen `dart` i `app_metadata`, kopplat till sin rad i `spelare` (`anvandare`). Spelare utan konto är gäster.
+- **Läsa:** alla i gruppen läser allt (policy `dart_las`).
+- **Spel:** ändras bara via `spara_spel`/`ta_bort_spel` (security definer). De släpper igenom nya spel, spel man själv skapat och spel där man själv är med (`far_andra`). Direkt skrivning i `spel`, `spel_spelare`, `runda` och `pil` är avstängd.
+- **Spelare:** alla får lägga till gäster; en spelare med konto ändras bara av ägaren; ingen kan koppla sig till någon annans konto. Ingen tar bort spelare.
+
 ## Funktioner
-- `dart.spara_spel(p jsonb)` – sparar ett helt spel i en transaktion. Idempotent: samma id skriver över (offlinekön kan skicka flera gånger).
+- `dart.spara_spel(p jsonb)` – sparar ett helt spel i en transaktion. Idempotent: samma id skriver över (offlinekön kan skicka flera gånger). Sätter `skapad_av` vid första sparandet.
 - `dart.ta_bort_spel(sid uuid)` – tar bort spelet med spelare, rundor och pilar.
+- `dart.far_andra(sid uuid)` – får den inloggade ändra spelet?
 - `dart.ar_dart()` – sant när JWT:ns `app_metadata.roll` är `dart`. Används i alla RLS-policyer.
 
 ## Vyer (security_invoker, följer RLS)

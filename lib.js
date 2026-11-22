@@ -2,8 +2,7 @@
 
 export const SUPABASE_URL = 'https://nlvgisjssbjethumvgdz.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_3wzcVvDgcoupfWSqAis4eg_bz2e6jiG'; // publik nyckel, skyddet är RLS
-// Ett konto – koden är lösenordet. Rollen 'dart' står i kontots app_metadata.
-const KONTO = 'h.lundqvist+dart@gmail.com';
+// Var och en har ett eget konto (e-post och lösenord). Rollen 'dart' i kontots app_metadata släpper in i gruppen.
 const SCHEMA = 'dart';
 const SESSION_KEY = 'dart-session';   // samma webbadress (lunkster.github.io) som THT och skytte – egen nyckel
 
@@ -66,13 +65,20 @@ async function auth(grant, body) {
   return { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: j.expires_at };
 }
 
-export async function login(kod) {
-  current = await auth('password', { email: KONTO, password: kod });
+export async function login(epost, losen) {
+  current = await auth('password', { email: epost.trim(), password: losen });
   save(current);
+  if (current) minns('epost', epost.trim());
   return !!current;
 }
 export function logout() { current = null; save(null); }
 export const isLoggedIn = () => !!current;
+
+// Den inloggades konto-id (sub i JWT) och spelaren som hör till kontot
+export function anvandarId() {
+  try { return JSON.parse(atob(current.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub ?? null; } catch { return null; }
+}
+export const jag = (alla) => alla.find((s) => s.anvandare && s.anvandare === anvandarId()) ?? null;
 
 async function session(required) {
   if (!current) { if (required) throw Object.assign(new Error('Inte inloggad'), { status: 401 }); return null; }

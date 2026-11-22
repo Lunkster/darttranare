@@ -4,23 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Darttränaren – attrapp</title>
-  <link rel="stylesheet" href="../style.css?v=0.1.0">
+  <link rel="stylesheet" href="../style.css?v=0.2.0">
   <style>#testut{position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow:auto;background:#000d;color:#eee;font:12px monospace;padding:8px;margin:0;z-index:99;white-space:pre-wrap}#testut:empty{display:none}.ok{color:#5c5}.fel{color:#f66;font-weight:700}</style>
 </head>
 <body>
   <!-- Samma sida som index.html, men Supabase ersätts av en attrapp i minnet. ?flode kör hela testflödet. -->
   <header class="topbar">
-    <a href="#/" class="brand"><img src="../ikon.svg?v=0.1.0" alt="" class="logo"><span>Dart (attrapp)</span></a>
+    <a href="#/" class="brand"><img src="../ikon.svg?v=0.2.0" alt="" class="logo"><span>Dart (attrapp)</span></a>
     <nav class="tabs"><a href="#/" data-route="spela">Spela</a><a href="#/historik" data-route="historik">Historik</a><a href="#/statistik" data-route="statistik">Statistik</a></nav>
   </header>
   <main id="app"><p class="muted center">Laddar …</p></main>
-  <footer class="foot"><span id="kostatus"></span><button type="button" id="installera" hidden></button><span id="version">attrapp</span> · <a href="#/loggaut" id="loggaut" hidden>Logga ut</a></footer>
+  <footer class="foot"><span id="kostatus"></span><button type="button" id="installera" hidden></button><span id="inloggad"></span><span id="version">attrapp</span> · <a href="#/loggaut" id="loggaut" hidden>Logga ut</a></footer>
   <pre id="testut"></pre>
   <script type="module">
     if (new URLSearchParams(location.search).has('flode')) { localStorage.clear(); location.hash = '#/'; }
-    await import('./attrapp.js?v=0.1.0');
-    await import('../app.js?v=0.1.0');
-    if (new URLSearchParams(location.search).has('flode')) await import('./flode.js?v=0.1.0');
+    await import('./attrapp.js?v=0.2.0');
+    await import('../app.js?v=0.2.0');
+    if (new URLSearchParams(location.search).has('flode')) await import('./flode.js?v=0.2.0');
   </script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 // Statistik per spelare: X01, cricket, övningarna och träff per dubbel. Allt räknas i vyerna.
-import { api, esc, fmt, proc, minns } from './lib.js?v=0.1.0';
-import { linje, staplar } from './diagram.js?v=0.1.0';
-import { malText } from './spel.js?v=0.1.0';
+import { api, esc, fmt, proc, minns, jag } from './lib.js?v=0.2.0';
+import { linje, staplar } from './diagram.js?v=0.2.0';
+import { malText } from './spel.js?v=0.2.0';
 
 const summa = (rader, f) => rader.reduce((a, r) => a + Number(r[f] ?? 0), 0);
 const max = (rader, f) => (rader.length ? Math.max(...rader.map((r) => Number(r[f] ?? -Infinity))) : null);
@@ -9,7 +9,7 @@ const nyckel = (v, t) => `<div class="nyckel"><div class="v">${v}</div><div clas
 
 export async function renderStatistik(el, alla) {
   const aktiva = alla.filter((s) => s.aktiv);
-  let vald = minns('statspelare') ?? aktiva[0]?.id;
+  let vald = minns('statspelare') ?? jag(alla)?.id ?? aktiva[0]?.id;
   if (!alla.some((s) => s.id === vald)) vald = aktiva[0]?.id;
   const [x01, ovr, mal] = await Promise.all([
     api(`v_x01?spelare_id=eq.${vald}&order=start`),

@@ -1,10 +1,10 @@
 // Starta och spela: X01, cricket och övningar. Pågående spel sparas lokalt efter varje kast,
 // färdiga legs/övningar läggs i offlinekön och skickas med spara_spel.
-import { esc, fmt, proc, minns, uuid, write, laggIKo, skickaKo, tid } from './lib.js?v=0.1.0';
+import { esc, fmt, proc, minns, uuid, write, laggIKo, skickaKo, tid, jag } from './lib.js?v=0.2.0';
 import {
   TYPER, besok, fragaDubbel, utgang, kanGaUt, x01Snitt, plan, knappar, ovningSumma, ovningSlut,
   cricketLage, CRICKET, marksText, segText, malText, traff,
-} from './spel.js?v=0.1.0';
+} from './spel.js?v=0.2.0';
 
 let app = null;
 let inmatning = '';      // X01: siffror som skrivits in
@@ -20,7 +20,8 @@ const nu = () => new Date().toISOString();
 export function renderStart(el, alla) {
   app = el; tangent = null;
   const aktiva = alla.filter((s) => s.aktiv);
-  const val = minns('val') ?? { typ: 'x01', spelare: aktiva[0] ? [aktiva[0].id] : [], inst: {} };
+  const forst = jag(alla) ?? aktiva[0];
+  const val = minns('val') ?? { typ: 'x01', spelare: forst ? [forst.id] : [], inst: {} };
   val.spelare = val.spelare.filter((id) => aktiva.some((s) => s.id === id));
   const p = pagaende();
   const namnPa = (ids) => ids.map((id) => alla.find((s) => s.id === id)?.namn ?? '?').join(', ');
@@ -53,8 +54,9 @@ export function renderStart(el, alla) {
       <p class="muted">${esc(beskr)}</p>
       <h3>Spelare <span class="muted liten">i kastordning</span></h3>
       <div class="val" id="spelarval">${aktiva.map((s) => { const i = val.spelare.indexOf(s.id);
-        return `<button type="button" class="chip${i >= 0 ? ' vald' : ''}" data-spelare="${s.id}">${i >= 0 ? `<b>${i + 1}</b> ` : ''}${esc(s.namn)}</button>`; }).join('')}</div>
-      <form id="nyspelare" class="rad"><input name="namn" placeholder="Ny spelare" maxlength="40" autocomplete="off"><button class="btn" type="submit">Lägg till</button></form>
+        return `<button type="button" class="chip${i >= 0 ? ' vald' : ''}" data-spelare="${s.id}">${i >= 0 ? `<b>${i + 1}</b> ` : ''}${esc(s.namn)}${s.anvandare ? '' : ' <span class="gast">gäst</span>'}</button>`; }).join('')}</div>
+      <p class="forklaring">Spelare med eget konto ser spelet i sin statistik. Gäster är bara namn.</p>
+      <form id="nyspelare" class="rad"><input name="namn" placeholder="Ny gäst" maxlength="40" autocomplete="off"><button class="btn" type="submit">Lägg till</button></form>
       ${installningar}
       <p class="msg" id="startmsg">${esc(meddelande)}</p>
       <button class="btn primar stor" id="starta" type="button"${val.spelare.length ? '' : ' disabled'}>Starta</button>

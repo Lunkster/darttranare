@@ -1,15 +1,15 @@
 // Router, inloggning, spelarlistan och offlinekön.
-import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo } from './lib.js?v=0.1.0';
-import { renderStart, renderSpel } from './spela.js?v=0.1.0';
-import { renderHistorik } from './historik.js?v=0.1.0';
-import { renderStatistik } from './statistik.js?v=0.1.0';
+import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.2.0';
+import { renderStart, renderSpel } from './spela.js?v=0.2.0';
+import { renderHistorik } from './historik.js?v=0.2.0';
+import { renderStatistik } from './statistik.js?v=0.2.0';
 
 const app = document.getElementById('app');
 
 // Spelarna sparas lokalt så att ett spel kan startas utan nät.
 export async function spelare(fresh = false) {
   const sparade = minns('spelare');
-  if (sparade && !fresh) { hamtaSpelare().catch(() => {}); return sparade; }
+  if (sparade && !fresh && sparade.every((s) => 'anvandare' in s)) { hamtaSpelare().catch(() => {}); return sparade; }
   try { return await hamtaSpelare(); } catch (e) { if (sparade && (e.natfel || e instanceof TypeError)) return sparade; throw e; }
 }
 async function hamtaSpelare() {
@@ -31,6 +31,7 @@ async function route() {
   if (vy === 'loggaut') { logout(); location.hash = '#/'; return; }
   if (!isLoggedIn()) return renderLogin();
   try {
+    if (vy !== 'spel') spelare().then(visaInloggad).catch(() => {});
     if (vy === 'spel') return renderSpel(app);
     if (vy === 'historik') return await renderHistorik(app, await spelare());
     if (vy === 'statistik') return await renderStatistik(app, await spelare());
@@ -44,26 +45,34 @@ async function route() {
   }
 }
 
+function visaInloggad(alla) {
+  const j = jag(alla);
+  document.getElementById('inloggad').textContent = j ? `${j.namn} · ` : '';
+}
+
 function renderLogin(msg = '') {
+  document.getElementById('inloggad').textContent = '';
   document.querySelectorAll('.tabs a').forEach((a) => a.classList.remove('active'));
   app.innerHTML = `
     <form class="card login" id="loginform">
       <h1>Logga in</h1>
-      <p class="muted">Koden till Darttränaren.</p>
-      <label for="kod">Kod</label>
+      <p class="muted">Med ditt eget konto. Konton delas ut av Henrik.</p>
+      <label for="epost">E-post</label>
+      <input id="epost" type="email" autocomplete="username" required value="${esc(minns('epost') ?? '')}">
+      <label for="kod">Lösenord</label>
       <input id="kod" type="password" autocomplete="current-password" required>
       <button class="btn primar" type="submit">Logga in</button>
       <p id="loginmsg" class="msg">${esc(msg)}</p>
     </form>`;
   const f = document.getElementById('loginform');
-  f.kod.focus();
+  (f.epost.value ? f.kod : f.epost).focus();
   f.addEventListener('submit', async (e) => {
     e.preventDefault();
     const m = document.getElementById('loginmsg');
     m.textContent = 'Loggar in …';
     let ok = false;
-    try { ok = await login(f.kod.value); } catch { m.textContent = 'Inget nät – försök igen.'; return; }
-    if (ok) { skickaKo(); route(); } else m.textContent = 'Fel kod – försök igen.';
+    try { ok = await login(f.epost.value, f.kod.value); } catch { m.textContent = 'Inget nät – försök igen.'; return; }
+    if (ok) { minns('spelare', null); minns('val', null); minns('statspelare', null); skickaKo(); route(); } else m.textContent = 'Fel e-post eller lösenord – försök igen.';
   });
 }
 
