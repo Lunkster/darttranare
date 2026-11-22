@@ -14,5 +14,6 @@
 - Under pågående spel får inget scrolla, på någon skärmstorlek (Henrik 2026-11-22). Prova nya spelvyer i 360×640, 375×667, 768×1024, 1024×768 och 740×360.
 - Importen hittar spelare på `spelare.mdt_namn` – alias (`namn`) byts fritt i appen.
 - Spel på distans (v0.6): läget delas i `live_match` med versionsnummer (`live_skicka`). Bara den som har turen skriver in; kod i `spela.js` under *distans*. Testas i flödestestet genom att ändra attrappens `live_match` (motspelarens telefon).
+- Klubbappen (v0.7): `klubb.js` läser projektet `bdc-statistik` (Bankeryds dartklubb, annat Supabase-konto) direkt med klubbappens inloggning `bdc-session` – kopiera aldrig klubbens data hit. Beroende av klubbens `v_turnering_statistik`, `v_ds_spelare`, `turnering` och `spelare` och adresserna `#/tavling/<tdid>`, `#/serien/<tdid>`, `#/spelare/<id>`. Ändras de i klubbappen måste `klubb.js` följa med.
 - Turneringar skapas bara av admin: `app_metadata.dart_admin = true` (Henriks konto). Fler admins: sätt flaggan i Supabase (SQL), lägg inte e-post i repot.
 - **Ny person i gruppen:** Henrik skapar kontot i Supabase (Authentication → Users → Add user, Auto Confirm) och säger e-post och spelarnamn. Claude sätter rollen och kopplar spelaren (se kommentaren överst i `supabase/04_konton.sql`) – finns personen redan som gäst kopplas den raden, så historiken följer med.

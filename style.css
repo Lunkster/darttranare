@@ -62,7 +62,7 @@ main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: 12px; }
 .chip { font: inherit; font-size: 16px; color: var(--text-2); background: var(--kort-2); border: 1px solid var(--linje); border-radius: 999px; padding: 10px 16px; min-height: 48px; cursor: pointer; }
 .chip.vald { background: var(--gron); border-color: var(--gron); color: #fff; }
 .chip b { background: rgba(0,0,0,.25); border-radius: 999px; padding: 0 6px; }
-input { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--linje); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
+input, select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--linje); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
 #nyspelare { margin-top: 8px; }
 #nyspelare input { flex: 1; min-width: 0; }
 .login { max-width: 360px; margin: 24px auto; display: flex; flex-direction: column; gap: 8px; }
@@ -257,3 +257,15 @@ body.spelar .malvy { flex: 1 1 auto; min-height: 0; display: flex; flex-directio
 .hurspela h3 { margin: 0; }
 .livemarke { color: var(--gron-2); font-size: 13px; }
 button.hemkort { width: 100%; text-align: left; font: inherit; border: 0; border-left: 4px solid var(--guld); cursor: pointer; }
+
+/* Tävlingar från klubbappen */
+.kalla { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); margin-left: 6px; }
+.klubb { border-left: 4px solid #da4ca2; }
+.klubb .kalla { color: #da4ca2; }
+.tabellruta { overflow-x: auto; }
+.klubbtabell th:first-child, .klubbtabell td:first-child { text-align: left; }
+.klubbtabell td:first-child small { display: block; color: var(--text-3); font-size: 12px; }
+.klubbtabell td:not(:first-child) { white-space: nowrap; }
+.klubbtabell a { color: var(--text); text-decoration: underline; text-decoration-color: #da4ca2; text-underline-offset: 3px; }
+.jamfor { margin: 6px 0 12px; } .jamfor b { font-size: 20px; }
+#bdc { flex: 1; min-width: 0; }

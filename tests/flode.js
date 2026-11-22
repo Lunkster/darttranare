@@ -1,7 +1,7 @@
 // Hela flödet mot attrappen: inloggning, X01 med bust och utgång, ogiltig poäng, Bob's 27, solocricket med ångra,
 // offline-kö, historik med ta bort och statistik. Kör: tests/attrapp.html?flode – slutar med "fel: 0".
-import { db, KOD, EPOST } from './attrapp.js?v=0.6.0';
-import { ko } from '../lib.js?v=0.6.0';
+import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.7.0';
+import { ko, minns } from '../lib.js?v=0.7.0';
 
 const ut = document.getElementById('testut');
 let fel = 0;
@@ -111,7 +111,7 @@ try {
   kolla('historik visar snitt', text('#app').includes('snitt'));
   await klick(`[data-tabort="${b.id}"]`); await vanta(300);
   kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 3);
-  const { rpc } = await import('../lib.js?v=0.6.0');
+  const { rpc } = await import('../lib.js?v=0.7.0');
   let nekad = false; try { await rpc('ta_bort_spel', { sid: 'bo-spel-1' }); } catch { nekad = true; }
   kolla('servern nekar att ta bort Bos spel', nekad && db.spel.some((s) => s.id === 'bo-spel-1'));
   kolla('Annas spel är skapade av Anna', db.spel.filter((s) => s.id !== 'bo-spel-1').every((s) => s.skapad_av === 'u-anna'));
@@ -210,6 +210,28 @@ try {
   await klick('[data-ut="2"]'); await vanta(300);
   const ny = db.spel.filter((x) => x.typ === 'x01').sort((a2, b2) => (a2.start < b2.start ? 1 : -1))[0];
   kolla('utgång utan dubbelfråga sparad', text('h1').includes('vann') && ny.rundor.at(-1).pilar === 2 && ny.rundor.at(-1).pilar_dubbel === 1 && ny.rundor[3].pilar_dubbel === 0, JSON.stringify(ny.rundor.slice(-2)));
+
+  // Klubbappen: inloggad där (samma webbadress) → koppla spelare på Min sida → tävlingar i statistiken
+  localStorage.removeItem('bdc-session');
+  await ga('#/jag');
+  kolla('klubb: be om inloggning i klubbappen', text('#klubbval').includes('Logga in i klubbappen') && $('#klubbval a').href.startsWith('https://lunkster.github.io/bdc-statistik/'));
+  localStorage.setItem('bdc-session', JSON.stringify({ access_token: 'klubbtoken', refresh_token: 'r', expires_at: Date.now() / 1000 + 3600 }));
+  await ga('#/x'); await ga('#/jag'); await vanta(200);
+  kolla('klubb: spelarna i klubbappen', $('#bdc')?.options.length === 3, text('#klubbval'));
+  $('#bdc').value = '7'; $('#bdc').dispatchEvent(new Event('change')); await vanta(300);
+  kolla('klubb: kopplad', db.spelare[0].bdc_id === 7 && text('#bdcmsg').includes('Kopplad'), text('#bdcmsg'));
+  minns('statspelare', 1);
+  await ga('#/statistik'); await vanta(400);
+  const tavlLankar = [...document.querySelectorAll('#klubb .klubbtabell a')];
+  kolla('klubb: tävlingarna i statistiken', text('#klubb').includes('tävlingar') && document.querySelectorAll('#klubb .klubbtabell tr').length >= 9, text('#klubb').slice(0, 120));
+  kolla('klubb: länk till rätt tävling', tavlLankar[0]?.href === 'https://lunkster.github.io/bdc-statistik/#/tavling/td9' && tavlLankar[0].target === '_blank' && text('#klubb .klubbtabell tr:nth-child(2) small') === '2026-10-19', tavlLankar[0]?.href);
+  kolla('klubb: serien med länk', [...document.querySelectorAll('#klubb a')].some((a) => a.href.endsWith('#/serien/ds1')) && text('#klubb').includes('Bankeryd B'));
+  kolla('klubb: tävling mot träning', text('#klubb .jamfor').includes('Tävling') && text('#klubb .jamfor').includes('träning'), text('#klubb .jamfor'));
+  await klick('#klubb [data-fler]');
+  kolla('klubb: visa alla tävlingar', !$('#klubb .fler').hidden);
+  localStorage.setItem('bdc-session', JSON.stringify({ access_token: 'gammal', refresh_token: 'r', expires_at: Date.now() / 1000 + 3600 }));
+  await ga('#/x'); await ga('#/statistik'); await vanta(400);
+  kolla('klubb: utgången inloggning', text('#klubb').includes('Logga in i klubbappen') && !localStorage.getItem('bdc-session'), text('#klubb'));
 
   // Nytt i appen (i-knappen) – går också utan inloggning
   await klick('#info'); await vanta(400);

@@ -1,7 +1,8 @@
 // Statistik per spelare: X01, cricket, övningarna och träff per dubbel. Allt räknas i vyerna.
-import { api, esc, fmt, proc, minns, jag } from './lib.js?v=0.6.0';
-import { linje, staplar } from './diagram.js?v=0.6.0';
-import { malText } from './spel.js?v=0.6.0';
+import { api, esc, fmt, proc, minns, jag } from './lib.js?v=0.7.0';
+import { linje, staplar } from './diagram.js?v=0.7.0';
+import { malText } from './spel.js?v=0.7.0';
+import { klubbInloggad, klubbKort, kopplaKlubbKort, loggaInKlubb } from './klubb.js?v=0.7.0';
 
 const summa = (rader, f) => rader.reduce((a, r) => a + Number(r[f] ?? 0), 0);
 const max = (rader, f) => (rader.length ? Math.max(...rader.map((r) => Number(r[f] ?? -Infinity))) : null);
@@ -65,12 +66,20 @@ export async function renderStatistik(el, alla) {
   const dubRader = [...dub].sort((a, b) => Number(a[0].slice(1)) - Number(b[0].slice(1)))
     .map(([m, d]) => ({ text: malText(m), varde: d.p ? d.t / d.p : 0, etikett: `${proc(d.t, d.p)} (${d.t}/${d.p})` }));
 
+  // Tävlingar i klubben (Bankeryds dartklubb) – läses direkt ur klubbappen, fylls på efteråt
+  const spelaren = alla.find((s) => s.id === vald), egen = vald === jag(alla)?.id;
+  const visaKlubb = spelaren?.bdc_id || egen;
+  const klubbRuta = visaKlubb ? `<section class="card klubb" id="klubb"><h2>Tävlingar <span class="kalla">Bankeryds dartklubb</span></h2>
+    ${!spelaren?.bdc_id ? '<p class="muted">Koppla dig till din spelare i klubbappen på <a href="#/jag">Min sida</a>, så syns dina tävlingar här.</p>'
+      : klubbInloggad() ? '<p class="muted">Hämtar från klubbappen …</p>' : loggaInKlubb}</section>` : '';
+
   el.innerHTML = `
     <div class="card"><h1>Statistik</h1>
       <div class="val">${aktiva.map((s) => `<button type="button" class="chip${s.id === vald ? ' vald' : ''}" data-spelare="${s.id}">${esc(s.namn)}</button>`).join('')}</div>
       ${vald !== jag(alla)?.id ? '<p class="forklaring">Visar bara spel där du själv var med.</p>' : ''}
     </div>
-    <section class="card"><h2>X01</h2>${x01html}</section>
+    <section class="card"><h2>X01 <span class="kalla">träning</span></h2>${x01html}</section>
+    ${klubbRuta}
     <section class="card"><h2>Cricket</h2>${crhtml}</section>
     ${ovning('bobs27', "Bob's 27")}
     ${ovning('jdc', 'JDC Challenge')}
@@ -80,5 +89,17 @@ export async function renderStatistik(el, alla) {
     ${schtml}
     <section class="card"><h2>Träff per dubbel</h2><p class="forklaring">Alla pilar mot dubblar i övningarna (Bob's 27, runt dubblarna, JDC).</p>${staplar(dubRader)}</section>`;
 
+  if (spelaren?.bdc_id && klubbInloggad()) {
+    const traning = summa(x01, 'pilar') ? (summa(x01, 'poang') * 3) / summa(x01, 'pilar') : null;
+    klubbKort(spelaren.bdc_id, traning).then((html) => {
+      const k = el.querySelector('#klubb');
+      if (!k) return;
+      k.innerHTML = `<h2>Tävlingar <span class="kalla">Bankeryds dartklubb</span></h2>${html}`;
+      kopplaKlubbKort(k);
+    }).catch((e) => {
+      const k = el.querySelector('#klubb');
+      if (k) k.querySelector('p').outerHTML = e.klubb ? loggaInKlubb : `<p class="muted">Klubbappen svarar inte just nu (${esc(e.message)}).</p>`;
+    });
+  }
   el.querySelectorAll('[data-spelare]').forEach((b) => b.onclick = () => { minns('statspelare', Number(b.dataset.spelare)); renderStatistik(el, alla); });
 }

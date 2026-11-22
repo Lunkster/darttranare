@@ -18,7 +18,8 @@ erDiagram
     boolean aktiv
     smallint ordning
     uuid anvandare UK "konto i auth.users – null = gäst"
-    text mdt_namn UK "namnet i My Dart Training (import)" }
+    text mdt_namn UK "namnet i My Dart Training (import)"
+    integer bdc_id "spelaren i klubbappen bdc-statistik" }
   spel { uuid id PK "sätts i appen (offline)"
     text typ "x01 bobs27 dubbelrunda jdc scoring cricket"
     jsonb installningar "start, forst_till, leg, mal, pilar, mdt"
@@ -79,6 +80,7 @@ Var och en har ett eget konto med rollen `dart` i `app_metadata`, kopplat till s
 - **Läsa spel:** bara spel man själv var med i eller har skapat (`ser_spel`, 06_synlighet.sql), och legs i turneringar man är med i (07).
 - **Turneringar (07_turneringar.sql):** deltagare med konto (och admin) ser turneringen, schemat och alla dess matcher (`i_turnering`). Bara admin – `app_metadata.dart_admin` – skapar och tar bort (`skapa_turnering`, `ta_bort_turnering`). Matchresultat och tabell räknas i `spel.js` (`matchlagen`, `turneringstabell`) ur vyn `v_turnering_leg` – inget lagras.
 - **Spel på distans (08_distans.sql):** två spelare med konto i samma turneringsmatch, var och en på sin telefon. Läget för det pågående leget ligger tillfälligt i `live_match`; deltagarna i turneringen kan läsa det. Bara matchens två spelare (och admin) skriver, via `live_skicka(tm, ver, lage)`: `ver = 0` startar (nekas om matchen redan är startad), annars måste `ver` vara den senaste versionen – annars svarar funktionen null och appen hämtar motspelarens läge. `live_avsluta(tm)` tar bort raden när matchen är slut eller avbryts. Färdiga legs sparas som vanligt med `spara_spel`.
+- **Klubbappen (09_klubb.sql):** `spelare.bdc_id` är ens spelare i Bankeryds dartklubbs app (Supabase-projektet `bdc-statistik`). Var och en sätter sin egen på Min sida. Inget av klubbens data kopieras hit: `klubb.js` läser vyerna `v_turnering_statistik`, `v_ds_spelare` och tabellerna `turnering`, `spelare` direkt i klubbprojektet med klubbappens inloggning (`bdc-session` i localStorage – samma webbadress).
 - **Läsa spelare:** alla i gruppen ser spelarlistan (behövs för att välja motståndare).
 - **Spel:** ändras bara via `spara_spel`/`ta_bort_spel` (security definer). De släpper igenom nya spel, spel man själv skapat och spel där man själv är med (`far_andra`). Direkt skrivning i `spel`, `spel_spelare`, `runda` och `pil` är avstängd.
 - **Spelare:** alla får lägga till gäster; en spelare med konto ändras bara av ägaren. Inloggade får bara ändra `namn` och `aktiv` (05_alias.sql) – ingen kan koppla om konton. Ingen tar bort spelare.

@@ -1,6 +1,6 @@
 // Attrapp för Supabase (PostgREST + auth) i minnet – testerna rör aldrig riktiga databasen.
 // Ersätter window.fetch innan appen laddas. Påhittade spelare. Vyerna räknas med samma regler som i SQL.
-import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.6.0';
+import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.7.0';
 
 export const KOD = 'kod123';
 export const EPOST = 'anna@exempel.se';
@@ -12,6 +12,15 @@ export const db = {
     spelare: [{ spelare_id: 2, ordning: 1, vinnare: false }], rundor: [], pilar: [{ spelare_id: 2, runda: 1, nr: 1, mal: '20', segment: 'T20' }, { spelare_id: 2, runda: 1, nr: 2, mal: '20', segment: 'M' }, { spelare_id: 2, runda: 1, nr: 3, mal: '20', segment: 'S20' }] }],
   turnering: [], turnering_deltagare: [], turnering_match: [], live_match: [],
   nextId: 3, offline: false, logg: [], inloggad: null,
+};
+// Klubbappen (bdc-statistik) – eget projekt, påhittade spelare och tävlingar
+export const klubb = {
+  spelare: [{ id: 7, namn: 'Anna Andersson', aktiv: true }, { id: 8, namn: 'Bo Berg', aktiv: true }],
+  turnering: Array.from({ length: 10 }, (_, i) => ({ tdid: `td${i}`, titel: `Bankeryd onsdag ${i + 1}`, datum: `2026-10-${String(i + 10).padStart(2, '0')}`, serie: 'onsdag', omgang: i + 1 })),
+  v_turnering_statistik: Array.from({ length: 10 }, (_, i) => ({ tdid: `td${i}`, spelare_id: 7, placering: i === 3 ? 1 : 4, matcher: 4, vunna_matcher: 2, legs: 10, vunna_legs: 5,
+    poang: 1500 + 10 * i, pilar: 90, snitt: Math.round((3 * (1500 + 10 * i) / 90) * 100) / 100, t180: i % 2, high_out: 80 + i })),
+  v_ds_spelare: [{ tdid: 'ds1', spelare_id: 7, division: 'Division 2', lag: 'Bankeryd B', singlar: 6, singlar_vunna: 4, dubblar: 2, dubblar_vunna: 1, poang: 900, pilar: 60, snitt: 45 }],
+  anrop: [],
 };
 // Samma regel som dart.far_andra: nytt spel, eget spel eller spel där man själv är med
 const farAndra = (sid) => {
@@ -97,6 +106,12 @@ window.fetch = async (url, init = {}) => {
   const u = new URL(url, location.href);
   if (!u.hostname.includes('supabase')) return riktig(url, init);
   if (db.offline) throw new TypeError('Failed to fetch');
+  if (u.hostname.startsWith('xkfj')) {   // klubbappen
+    klubb.anrop.push(u.pathname + u.search);
+    if (!(init.headers?.Authorization ?? '').includes('klubbtoken')) return svar({ message: 'JWT' }, 401);
+    const t = u.pathname.replace('/rest/v1/', '');
+    return klubb[t] ? svar(filtrera(klubb[t], u.searchParams)) : svar({ message: `okänd ${t}` }, 404);
+  }
   const h = init.headers ?? {}, m = init.method ?? 'GET', body = init.body ? JSON.parse(init.body) : null;
   if (u.pathname.includes('/auth/')) {
     const k = body.refresh_token ? { sub: db.inloggad ?? 'u-anna' } : KONTON[body.email];
@@ -123,7 +138,7 @@ window.fetch = async (url, init = {}) => {
   }
   if (t === 'spelare' && m === 'PATCH') {
     const id = Number(q.get('id').slice(3)), rad = db.spelare.find((x) => x.id === id);
-    if (Object.keys(body).some((k) => !['namn', 'aktiv'].includes(k))) return svar({ code: '42501', message: 'permission denied' }, 403);
+    if (Object.keys(body).some((k) => !['namn', 'aktiv', 'bdc_id'].includes(k))) return svar({ code: '42501', message: 'permission denied' }, 403);
     if (!rad || (rad.anvandare && rad.anvandare !== db.inloggad)) return svar(null, 204);   // RLS: inga rader ändras
     if (body.namn && db.spelare.some((x) => x.id !== id && x.namn.toLowerCase() === body.namn.toLowerCase())) return svar({ code: '23505', message: 'duplicate key' }, 409);
     Object.assign(rad, body); return svar(null, 204);
