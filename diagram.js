@@ -1,5 +1,5 @@
 // Egna SVG-diagram utan bibliotek. Datum som ÅÅÅÅ-MM-DD, tal med decimalkomma.
-import { esc, fmt, datum } from './lib.js?v=0.7.0';
+import { esc, fmt, datum } from './lib.js?v=0.7.1';
 
 const B = 340, H = 180, M = { v: 38, h: 10, o: 12, n: 26 };
 
@@ -12,21 +12,25 @@ function skala(min, max, steg = 4) {
   return { lo, hi, ticks: ut };
 }
 
-// punkter = [{x: Date|string, y: number, text?}] i tidsordning. Visar punkter, glidande medel och y-axel.
+// punkter = [{x: Date|string, y: number, text?, klass?}]. Visar punkter, glidande medel och y-axel.
+// Punkter med klass (t.ex. 'klubb' = tävling, rosa) ritas i egen färg och räknas inte i medellinjen.
 export function linje(punkter, { dec = 1, enhet = '', medel = 5 } = {}) {
+  punkter = [...punkter].sort((a, b) => new Date(a.x) - new Date(b.x));
   const p = punkter.filter((q) => q.y !== null && q.y !== undefined && !Number.isNaN(Number(q.y))).map((q) => ({ ...q, t: new Date(q.x).getTime(), y: Number(q.y) }));
   if (!p.length) return '<p class="muted">Inga spel än.</p>';
   const ys = skala(Math.min(...p.map((q) => q.y)), Math.max(...p.map((q) => q.y)));
   // x efter ordning (inte tid) så att täta kvällar inte klumpar ihop sig
   const X = (i) => M.v + (p.length === 1 ? (B - M.v - M.h) / 2 : (i * (B - M.v - M.h)) / (p.length - 1));
   const Y = (v) => M.o + ((ys.hi - v) * (H - M.o - M.n)) / (ys.hi - ys.lo);
-  const glid = p.map((_, i) => { const f = p.slice(Math.max(0, i - medel + 1), i + 1); return f.reduce((a, q) => a + q.y, 0) / f.length; });
+  // medellinjen bara genom de vanliga punkterna (träningen), på deras platser
+  const vanliga = p.map((q, i) => ({ ...q, i })).filter((q) => !q.klass);
+  const glid = vanliga.map((q, k) => { const f = vanliga.slice(Math.max(0, k - medel + 1), k + 1); return { i: q.i, y: f.reduce((a, x) => a + x.y, 0) / f.length }; });
   const xEt = p.length > 1 ? [0, p.length - 1] : [0];
   return `<svg viewBox="0 0 ${B} ${H}" class="diagram" role="img">
     ${ys.ticks.map((v) => `<line x1="${M.v}" x2="${B - M.h}" y1="${Y(v)}" y2="${Y(v)}" class="rutnat"/><text x="${M.v - 5}" y="${Y(v) + 4}" class="axel" text-anchor="end">${fmt(v, Number.isInteger(v) ? 0 : 1)}</text>`).join('')}
     ${xEt.map((i) => `<text x="${X(i)}" y="${H - 8}" class="axel" text-anchor="${i === 0 && p.length > 1 ? 'start' : i === p.length - 1 && p.length > 1 ? 'end' : 'middle'}">${datum(p[i].t)}</text>`).join('')}
-    ${p.length >= 3 ? `<polyline points="${glid.map((v, i) => `${X(i)},${Y(v)}`).join(' ')}" class="medel"/>` : ''}
-    ${p.map((q, i) => `<circle cx="${X(i)}" cy="${Y(q.y)}" r="3.2" class="punkt"><title>${datum(q.t)}: ${fmt(q.y, dec)}${enhet}${q.text ? ` – ${esc(q.text)}` : ''}</title></circle>`).join('')}
+    ${glid.length >= 3 ? `<polyline points="${glid.map((g) => `${X(g.i)},${Y(g.y)}`).join(' ')}" class="medel"/>` : ''}
+    ${p.map((q, i) => `<circle cx="${X(i)}" cy="${Y(q.y)}" r="${q.klass ? 4.6 : 3.2}" class="punkt${q.klass ? ` ${q.klass}` : ''}"><title>${datum(q.t)}: ${fmt(q.y, dec)}${enhet}${q.text ? ` – ${esc(q.text)}` : ''}</title></circle>`).join('')}
   </svg>`;
 }
 

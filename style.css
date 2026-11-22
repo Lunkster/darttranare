@@ -258,14 +258,16 @@ body.spelar .malvy { flex: 1 1 auto; min-height: 0; display: flex; flex-directio
 .livemarke { color: var(--gron-2); font-size: 13px; }
 button.hemkort { width: 100%; text-align: left; font: inherit; border: 0; border-left: 4px solid var(--guld); cursor: pointer; }
 
-/* Tävlingar från klubbappen */
+/* Tävlingar från klubbappen – rosa som klubbens emblem */
 .kalla { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); margin-left: 6px; }
-.klubb { border-left: 4px solid #da4ca2; }
-.klubb .kalla { color: #da4ca2; }
+.delrubrik { margin: 4px 0 8px; } .delrubrik.klubb { margin-top: 18px; color: #da4ca2; } .delrubrik.klubb .kalla { color: #da4ca2; }
+.klubbnycklar .nyckel { box-shadow: inset 3px 0 0 #da4ca2; }
+.diagram .punkt.klubb { fill: #da4ca2; stroke: var(--kort); stroke-width: 1.5; }
+.prick { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--gron-2); vertical-align: middle; }
+.prick.klubb { background: #da4ca2; width: 11px; height: 11px; }
 .tabellruta { overflow-x: auto; }
 .klubbtabell th:first-child, .klubbtabell td:first-child { text-align: left; }
 .klubbtabell td:first-child small { display: block; color: var(--text-3); font-size: 12px; }
 .klubbtabell td:not(:first-child) { white-space: nowrap; }
 .klubbtabell a { color: var(--text); text-decoration: underline; text-decoration-color: #da4ca2; text-underline-offset: 3px; }
-.jamfor { margin: 6px 0 12px; } .jamfor b { font-size: 20px; }
 #bdc { flex: 1; min-width: 0; }

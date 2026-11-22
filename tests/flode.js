@@ -1,7 +1,7 @@
 // Hela flödet mot attrappen: inloggning, X01 med bust och utgång, ogiltig poäng, Bob's 27, solocricket med ångra,
 // offline-kö, historik med ta bort och statistik. Kör: tests/attrapp.html?flode – slutar med "fel: 0".
-import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.7.0';
-import { ko, minns } from '../lib.js?v=0.7.0';
+import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.7.1';
+import { ko, minns } from '../lib.js?v=0.7.1';
 
 const ut = document.getElementById('testut');
 let fel = 0;
@@ -111,7 +111,7 @@ try {
   kolla('historik visar snitt', text('#app').includes('snitt'));
   await klick(`[data-tabort="${b.id}"]`); await vanta(300);
   kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 3);
-  const { rpc } = await import('../lib.js?v=0.7.0');
+  const { rpc } = await import('../lib.js?v=0.7.1');
   let nekad = false; try { await rpc('ta_bort_spel', { sid: 'bo-spel-1' }); } catch { nekad = true; }
   kolla('servern nekar att ta bort Bos spel', nekad && db.spel.some((s) => s.id === 'bo-spel-1'));
   kolla('Annas spel är skapade av Anna', db.spel.filter((s) => s.id !== 'bo-spel-1').every((s) => s.skapad_av === 'u-anna'));
@@ -222,16 +222,17 @@ try {
   kolla('klubb: kopplad', db.spelare[0].bdc_id === 7 && text('#bdcmsg').includes('Kopplad'), text('#bdcmsg'));
   minns('statspelare', 1);
   await ga('#/statistik'); await vanta(400);
-  const tavlLankar = [...document.querySelectorAll('#klubb .klubbtabell a')];
-  kolla('klubb: tävlingarna i statistiken', text('#klubb').includes('tävlingar') && document.querySelectorAll('#klubb .klubbtabell tr').length >= 9, text('#klubb').slice(0, 120));
-  kolla('klubb: länk till rätt tävling', tavlLankar[0]?.href === 'https://lunkster.github.io/bdc-statistik/#/tavling/td9' && tavlLankar[0].target === '_blank' && text('#klubb .klubbtabell tr:nth-child(2) small') === '2026-10-19', tavlLankar[0]?.href);
-  kolla('klubb: serien med länk', [...document.querySelectorAll('#klubb a')].some((a) => a.href.endsWith('#/serien/ds1')) && text('#klubb').includes('Bankeryd B'));
-  kolla('klubb: tävling mot träning', text('#klubb .jamfor').includes('Tävling') && text('#klubb .jamfor').includes('träning'), text('#klubb .jamfor'));
-  await klick('#klubb [data-fler]');
-  kolla('klubb: visa alla tävlingar', !$('#klubb .fler').hidden);
+  const tavlLankar = [...document.querySelectorAll('#klubblistor .klubbtabell a')];
+  kolla('klubb: tävlingarna i X01-kortet', text('#x01kort #klubbnycklar').includes('tävlingar') && document.querySelectorAll('#klubblistor .klubbtabell tr').length >= 9, text('#klubbnycklar').slice(0, 120));
+  kolla('klubb: länk till rätt tävling', tavlLankar[0]?.href === 'https://lunkster.github.io/bdc-statistik/#/tavling/td9' && tavlLankar[0].target === '_blank' && text('#klubblistor .klubbtabell tr:nth-child(2) small') === '2026-10-19', tavlLankar[0]?.href);
+  kolla('klubb: serien med länk', [...document.querySelectorAll('#klubblistor a')].some((a) => a.href.endsWith('#/serien/ds1')) && text('#klubblistor').includes('Bankeryd B'));
+  const rosa = document.querySelectorAll('#x01graf .punkt.klubb'), grona = document.querySelectorAll('#x01graf .punkt:not(.klubb)');
+  kolla('klubb: rosa punkter i X01-grafen', rosa.length === 10 && grona.length > 0 && !!$('#x01graf .prick.klubb'), `${rosa.length} rosa, ${grona.length} gröna`);
+  await klick('#klubblistor [data-fler]');
+  kolla('klubb: visa alla tävlingar', !$('#klubblistor .fler').hidden);
   localStorage.setItem('bdc-session', JSON.stringify({ access_token: 'gammal', refresh_token: 'r', expires_at: Date.now() / 1000 + 3600 }));
   await ga('#/x'); await ga('#/statistik'); await vanta(400);
-  kolla('klubb: utgången inloggning', text('#klubb').includes('Logga in i klubbappen') && !localStorage.getItem('bdc-session'), text('#klubb'));
+  kolla('klubb: utgången inloggning', text('#klubbnycklar').includes('Logga in i klubbappen') && !localStorage.getItem('bdc-session') && !$('#x01graf .punkt.klubb'), text('#klubbnycklar'));
 
   // Nytt i appen (i-knappen) – går också utan inloggning
   await klick('#info'); await vanta(400);

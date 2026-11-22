@@ -12,7 +12,7 @@ Egen träningsapp för dart som ersätter My Dart Training, med synk mellan tele
 - **Bob's 27**, **Runt dubblarna** (3 pilar per dubbel), **JDC Challenge**
 - **Pilar mot ett mål** – 30–100 pilar mot valfritt mål, singel/dubbel/trippel/miss per pil
 - **Turneringar** (v0.5) – serie eller utslag i X01 eller cricket, tabell, matcher i valfri ordning och samtidigt
-- **Tävlingar från klubben** (v0.7) – under Statistik syns ens tävlingar och distriktsserien från klubbappen för Bankeryds dartklubb, med länk till varje tävling och tävlingssnitt mot träningssnitt. Läses direkt i klubbappen med dess inloggning – inget kopieras
+- **Tävlingar från klubben** (v0.7) – i X01-statistiken syns ens tävlingar från klubbappen för Bankeryds dartklubb bredvid träningen: egna nyckeltal, rosa punkter i grafen (snitt per tävlingskväll), tävlingslista med länk till varje tävling och distriktsserien. Läses direkt i klubbappen med dess inloggning – inget kopieras
 - **Spel på distans** (v0.6) – två spelare i en turneringsmatch på var sin telefon; var och en skriver in sina kast och båda ser ställningen (avstämning var 1,5 s mot `live_match`)
 
 ## Struktur

@@ -2,6 +2,7 @@
  {
   "datum": "2026-11-22",
   "punkter": [
+   "**Tävling och träning ihop:** dina tävlingar från klubben visas nu i X01-statistiken bredvid träningen – rosa punkter i grafen är tävlingskvällar, gröna är träningslegs. (v0.7.1)",
    "**Tävlingar från klubben:** under Statistik syns dina tävlingar och distriktsserien från klubbappen för Bankeryds dartklubb, med länk till varje tävling och ditt tävlingssnitt mot träningssnittet. Logga in i klubbappen och välj vem du är där på Min sida. (v0.7.0)",
    "**Spela på distans:** i en turneringsmatch kan ni spela på var sin telefon – var och en skriver in sina kast och båda ser ställningen direkt. Välj *På distans* när du trycker *Spela*; motspelaren trycker *Gå med*. (v0.6.0)",
    "**Ny startsida** med din form, fortsätt-knapp, din nästa turneringsmatch och snabbstart för alla spel. (v0.5.0)",
