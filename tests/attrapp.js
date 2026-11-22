@@ -1,6 +1,6 @@
 // Attrapp för Supabase (PostgREST + auth) i minnet – testerna rör aldrig riktiga databasen.
 // Ersätter window.fetch innan appen laddas. Påhittade spelare. Vyerna räknas med samma regler som i SQL.
-import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.5.0';
+import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.6.0';
 
 export const KOD = 'kod123';
 export const EPOST = 'anna@exempel.se';
@@ -10,7 +10,7 @@ export const db = {
   // Ett spel som Bo spelat själv – Anna ser det men får inte ta bort det
   spel: [{ id: 'bo-spel-1', typ: 'scoring', installningar: { mal: '20', pilar: 3 }, start: '2026-11-01T18:00:00Z', slut: '2026-11-01T18:05:00Z', match_id: null, kalla: 'app', skapad_av: 'u-bo',
     spelare: [{ spelare_id: 2, ordning: 1, vinnare: false }], rundor: [], pilar: [{ spelare_id: 2, runda: 1, nr: 1, mal: '20', segment: 'T20' }, { spelare_id: 2, runda: 1, nr: 2, mal: '20', segment: 'M' }, { spelare_id: 2, runda: 1, nr: 3, mal: '20', segment: 'S20' }] }],
-  turnering: [], turnering_deltagare: [], turnering_match: [],
+  turnering: [], turnering_deltagare: [], turnering_match: [], live_match: [],
   nextId: 3, offline: false, logg: [], inloggad: null,
 };
 // Samma regel som dart.far_andra: nytt spel, eget spel eller spel där man själv är med
@@ -110,7 +110,8 @@ window.fetch = async (url, init = {}) => {
   if (m === 'GET') {
     const kalla = { v_x01: v.x01, v_resultat: v.resultat, v_mal: v.mal, v_turnering_leg: v.turneringLeg,
       turnering: synligaTurneringar, turnering_deltagare: () => db.turnering_deltagare.filter((d) => iTurnering(d.turnering_id)),
-      turnering_match: () => db.turnering_match.filter((m) => iTurnering(m.turnering_id)) }[t]?.() ?? db[t];
+      turnering_match: () => db.turnering_match.filter((m) => iTurnering(m.turnering_id)),
+      live_match: () => structuredClone(db.live_match.filter((l) => iTurnering(db.turnering_match.find((m) => m.id === l.turnering_match)?.turnering_id))) }[t]?.() ?? db[t];
     return kalla ? svar(filtrera(kalla, q)) : svar({ message: `okänd ${t}` }, 404);
   }
   db.logg.push(`${m} ${t}`);
@@ -147,6 +148,21 @@ window.fetch = async (url, init = {}) => {
     db.turnering_deltagare = db.turnering_deltagare.filter((x) => x.turnering_id !== body.tid);
     return svar(null, 204);
   }
+  // Samma regler som dart.live_skicka / live_avsluta: ver 0 startar, annars måste versionen stämma
+  if (t === 'rpc/live_skicka') {
+    const m = db.turnering_match.find((x) => x.id === body.tm);
+    if (!m || !iTurnering(m.turnering_id) || !body.lage.spelare.includes(jagId())) return svar({ message: 'Ingen behörighet' }, 400);
+    const rad = db.live_match.find((l) => l.turnering_match === body.tm);
+    if (body.ver === 0) {
+      if (rad) return svar(null, 200);
+      db.live_match.push({ turnering_match: body.tm, tillstand: structuredClone(body.lage), version: 1, andrad_av: db.inloggad });
+      return svar(1, 200);
+    }
+    if (!rad || rad.version !== body.ver) return svar(null, 200);
+    Object.assign(rad, { tillstand: structuredClone(body.lage), version: rad.version + 1, andrad_av: db.inloggad });
+    return svar(rad.version, 200);
+  }
+  if (t === 'rpc/live_avsluta') { db.live_match = db.live_match.filter((l) => l.turnering_match !== body.tm); return svar(null, 204); }
   if (t === 'rpc/ta_bort_spel') {
     if (!farAndra(body.sid)) return svar({ message: 'Ingen behörighet att ta bort spelet' }, 400);
     db.spel = db.spel.filter((s) => s.id !== body.sid); return svar(null, 204);

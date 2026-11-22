@@ -1,7 +1,8 @@
 // Startsidan: fortsätt spel, nästa turneringsmatch, snabbstart, form och senaste spel.
-import { api, esc, fmt, jag, minns, tid } from './lib.js?v=0.5.0';
-import { TYPER } from './spel.js?v=0.5.0';
-import { hamtaTurneringar, minaMatcher } from './turnering.js?v=0.5.0';
+import { api, esc, fmt, jag, minns, tid } from './lib.js?v=0.6.0';
+import { TYPER } from './spel.js?v=0.6.0';
+import { hamtaTurneringar, minaMatcher, hamtaLive } from './turnering.js?v=0.6.0';
+import { gaMed } from './spela.js?v=0.6.0';
 
 const VECKODAG = ['söndag', 'måndag', 'tisdag', 'onsdag', 'torsdag', 'fredag', 'lördag'];
 const RUTOR = [
@@ -29,6 +30,7 @@ export async function renderHem(el, alla) {
       <div id="form" class="hero-form"></div>
     </section>
     ${pagaendeKort}
+    <div id="live"></div>
     <div id="turneringar"></div>
     <h2 class="hemrubrik">Spela</h2>
     <div class="rutor">${RUTOR.map(([typ, tecken, text]) => `<a class="ruta" href="#/ny/${typ}">
@@ -38,10 +40,10 @@ export async function renderHem(el, alla) {
   if (!mig) return;
   // Det som kräver nät fylls på efteråt – startsidan syns direkt även utan nät
   try {
-    const [x01, ovr, turneringar] = await Promise.all([
+    const [x01, ovr, turneringar, live] = await Promise.all([
       api(`v_x01?spelare_id=eq.${mig.id}&select=spel_id,start,snitt,poang,pilar,vinnare,startpoang,mot&order=start.desc&limit=30`),
       api(`v_resultat?spelare_id=eq.${mig.id}&select=spel_id,typ,start,poang,traffar,pilar,mpr,rundor,vinnare,installningar&order=start.desc&limit=30`),
-      hamtaTurneringar().catch(() => []),
+      hamtaTurneringar().catch(() => []), hamtaLive(),
     ]);
     // Form: snitt senaste 5 legs mot alla
     const snitt = (r) => { const p2 = r.reduce((a, x) => a + Number(x.poang), 0), n = r.reduce((a, x) => a + Number(x.pilar), 0); return n ? (3 * p2) / n : null; };
@@ -53,6 +55,14 @@ export async function renderHem(el, alla) {
       cr.length ? `<div><b>${fmt(mpr(cr.slice(0, 5)), 2)}</b>${pil(mpr(cr.slice(0, 5)), mpr(cr))}<small>MPR, senaste 5</small></div>` : '',
     ].join('');
     el.querySelector('#form').innerHTML = formBit;
+
+    // Motspelaren har startat en match på distans som jag är med i
+    const vantande = live.filter((l) => l.tillstand.spelare?.includes(mig.id) && p?.turnering?.match !== l.turnering_match);
+    const liveEl = el.querySelector('#live');
+    liveEl.innerHTML = vantande.map((l) => `<button class="hemkort fortsatt" data-gamed="${l.turnering_match}" type="button">
+      <span class="hk-titel">Gå med i matchen · ${esc(l.tillstand.turnering?.namn ?? '')}</span>
+      <span class="hk-info">mot ${N(l.tillstand.spelare.find((id) => id !== mig.id))} · på distans</span></button>`).join('');
+    liveEl.querySelectorAll('[data-gamed]').forEach((b) => b.onclick = () => gaMed(b.dataset.gamed, mig.id).catch((e) => alert(e.message)));
 
     const aktiva = turneringar.filter((t) => !t.klar);
     el.querySelector('#turneringar').innerHTML = aktiva.length ? `<h2 class="hemrubrik">Turneringar</h2>${aktiva.map((t) => {

@@ -11,6 +11,7 @@ erDiagram
   turnering ||--|{ turnering_deltagare : har
   turnering ||--|{ turnering_match : schema
   turnering_match ||--o{ spel : "legs"
+  turnering_match ||--o| live_match : "spelas på distans"
   spelare ||--o{ turnering_deltagare : deltar
   spelare { smallint id PK
     text namn UK "alias, unikt oavsett stora/små bokstäver"
@@ -48,6 +49,11 @@ erDiagram
     smallint spelare2
     uuid fran1 "utslag: tidigare match"
     uuid fran2 }
+  live_match { uuid turnering_match PK
+    jsonb tillstand "pågående leg, samma objekt som appen har lokalt"
+    integer version "ökar vid varje skrivning"
+    timestamptz andrad
+    uuid andrad_av }
   spel_spelare { uuid spel_id PK
     smallint spelare_id PK
     smallint ordning
@@ -72,6 +78,7 @@ erDiagram
 Var och en har ett eget konto med rollen `dart` i `app_metadata`, kopplat till sin rad i `spelare` (`anvandare`). Spelare utan konto är gäster.
 - **Läsa spel:** bara spel man själv var med i eller har skapat (`ser_spel`, 06_synlighet.sql), och legs i turneringar man är med i (07).
 - **Turneringar (07_turneringar.sql):** deltagare med konto (och admin) ser turneringen, schemat och alla dess matcher (`i_turnering`). Bara admin – `app_metadata.dart_admin` – skapar och tar bort (`skapa_turnering`, `ta_bort_turnering`). Matchresultat och tabell räknas i `spel.js` (`matchlagen`, `turneringstabell`) ur vyn `v_turnering_leg` – inget lagras.
+- **Spel på distans (08_distans.sql):** två spelare med konto i samma turneringsmatch, var och en på sin telefon. Läget för det pågående leget ligger tillfälligt i `live_match`; deltagarna i turneringen kan läsa det. Bara matchens två spelare (och admin) skriver, via `live_skicka(tm, ver, lage)`: `ver = 0` startar (nekas om matchen redan är startad), annars måste `ver` vara den senaste versionen – annars svarar funktionen null och appen hämtar motspelarens läge. `live_avsluta(tm)` tar bort raden när matchen är slut eller avbryts. Färdiga legs sparas som vanligt med `spara_spel`.
 - **Läsa spelare:** alla i gruppen ser spelarlistan (behövs för att välja motståndare).
 - **Spel:** ändras bara via `spara_spel`/`ta_bort_spel` (security definer). De släpper igenom nya spel, spel man själv skapat och spel där man själv är med (`far_andra`). Direkt skrivning i `spel`, `spel_spelare`, `runda` och `pil` är avstängd.
 - **Spelare:** alla får lägga till gäster; en spelare med konto ändras bara av ägaren. Inloggade får bara ändra `namn` och `aktiv` (05_alias.sql) – ingen kan koppla om konton. Ingen tar bort spelare.

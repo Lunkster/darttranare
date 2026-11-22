@@ -1,10 +1,10 @@
 // Starta och spela: X01, cricket och övningar. Pågående spel sparas lokalt efter varje kast,
 // färdiga legs/övningar läggs i offlinekön och skickas med spara_spel.
-import { esc, fmt, proc, minns, uuid, write, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.5.0';
+import { esc, fmt, proc, minns, uuid, write, rpc, api, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.6.0';
 import {
   TYPER, besok, fragaDubbel, utgang, kanGaUt, x01Snitt, plan, knappar, ovningSumma, ovningSlut,
   cricketLage, CRICKET, marksText, segText, malText, traff,
-} from './spel.js?v=0.5.0';
+} from './spel.js?v=0.6.0';
 
 let app = null;
 let inmatning = '';      // X01: siffror som skrivits in
@@ -13,7 +13,13 @@ let tangent = null;      // aktiv tangentbordshanterare
 let meddelande = '';
 document.addEventListener('keydown', (e) => { if (tangent && !e.target.closest?.('input, textarea, select')) tangent(e); });
 
-const pagaende = (v) => minns('pagaende', v);
+// Spel på distans: varje ändring skickas till live_match och motspelarens ändringar hämtas (se Distans nedan)
+const pagaende = (v) => {
+  if (v?.distans) v.distans.osynkat = true;
+  const r = minns('pagaende', v);
+  if (v?.distans) startaSynk();
+  return r;
+};
 const nu = () => new Date().toISOString();
 
 // ============================================================ start
@@ -116,11 +122,87 @@ export function startaTurneringsmatch(typ, inst, spelare, namn, turnering) {
   location.hash = '#/spel';
 }
 
+// ============================================================ distans
+// Två spelare i samma turneringsmatch, var och en på sin telefon. Läget (samma objekt som pagaende)
+// ligger i live_match med ett versionsnummer. Den som har turen skriver; den andra ser och väntar.
+// Avstämning var 1,5 s – ett besök tar längre tid än så, och det kräver ingen öppen anslutning.
+const LIVE = 1500;
+let synkTimer = null, synkar = false;
+const utanDistans = ({ distans, ...lage }) => lage;   // eslint-disable-line no-unused-vars
+const taEmot = (rad, mig) => minns('pagaende', { ...rad.tillstand, distans: { version: rad.version, mig, osynkat: false } });
+
+export async function startaDistans(typ, inst, spelare, namn, turnering, mig) {
+  nyttSpel(typ, inst, spelare, namn, turnering);
+  const s = minns('pagaende');
+  const v = await rpc('live_skicka', { tm: turnering.match, ver: 0, lage: s }, true);
+  if (v === null) return gaMed(turnering.match, mig);   // motspelaren hann starta – gå med i den
+  s.distans = { version: v, mig, osynkat: false };
+  minns('pagaende', s);
+  location.hash = '#/spel';
+}
+export async function gaMed(tm, mig) {
+  const [rad] = await api(`live_match?turnering_match=eq.${tm}&select=version,tillstand`);
+  if (!rad) throw new Error('Matchen är inte startad på distans längre.');
+  inmatning = ''; fraga = null;
+  taEmot(rad, mig);
+  location.hash = '#/spel';
+}
+function avslutaDistans(s) {
+  if (s?.distans) rpc('live_avsluta', { tm: s.turnering.match }).catch(() => {});
+}
+
+function startaSynk() {
+  if (!synkTimer) synkTimer = setInterval(synkSteg, LIVE);
+  synkSteg();
+}
+async function synkSteg() {
+  const s = minns('pagaende');
+  if (!s?.distans || !location.hash.startsWith('#/spel')) { clearInterval(synkTimer); synkTimer = null; return; }
+  if (synkar || document.hidden) return;
+  synkar = true;
+  try {
+    if (s.distans.osynkat) {
+      const lage = utanDistans(s), skickat = JSON.stringify(lage);
+      const v = await rpc('live_skicka', { tm: s.turnering.match, ver: s.distans.version, lage }, true);
+      if (v !== null) {
+        const nu2 = minns('pagaende');
+        if (!nu2?.distans) return;
+        nu2.distans.version = v;
+        if (JSON.stringify(utanDistans(nu2)) === skickat) nu2.distans.osynkat = false;   // annars ändrat under tiden – skickas nästa varv
+        minns('pagaende', nu2);
+        return;
+      }
+      meddelande = 'Motspelaren hann före – ditt senaste kast kom inte med.';
+    }
+    const [rad] = await api(`live_match?turnering_match=eq.${s.turnering.match}&select=version,tillstand`);
+    const nu2 = minns('pagaende');
+    if (!nu2?.distans || nu2.turnering?.match !== s.turnering.match) return;
+    if (!rad) {   // avbruten (eller avslutad) av motspelaren
+      if (nu2.klar?.match) return;
+      minns('pagaende', null);
+      app.innerHTML = `<div class="card"><h1>Matchen avbröts</h1><p class="muted">Motspelaren avbröt matchen. Legs som spelats klart är sparade.</p>
+        <p class="rad"><a class="btn primar" href="#/turnering/${s.turnering.id}">Till ${esc(s.turnering.namn)}</a></p></div>`;
+      document.body.classList.remove('spelar');
+      return;
+    }
+    if (rad.version !== nu2.distans.version) {   // motspelaren har kastat (eller hann före oss)
+      inmatning = ''; fraga = null;
+      taEmot(rad, nu2.distans.mig);
+      rita();
+    }
+  } catch { /* nätet borta en stund – nästa varv försöker igen */ } finally { synkar = false; }
+}
+// Väntar den här telefonen på motspelaren? Och får den ångra (bara sitt eget senaste)?
+const vantarPa = (s, tur) => (s.distans && tur !== s.distans.mig ? tur : null);
+const egetSenast = (s, lista) => lista.length > 0 && (!s.distans || lista.at(-1).spelare_id === s.distans.mig);
+const vantaPanel = (s, id) => `<div class="vantar"><p>Väntar på ${N(s, id)} …</p><p class="muted liten">Kasten syns här medan ${N(s, id)} spelar.</p></div>`;
+
 // ============================================================ spela
 export function renderSpel(el) {
   app = el ?? app;
   const s = pagaende();
   if (!s) { location.hash = '#/'; return; }
+  if (s.distans) startaSynk();
   if (s.typ === 'x01') x01Vy(s);
   else if (s.typ === 'cricket') cricketVy(s);
   else ovningVy(s);
@@ -130,13 +212,17 @@ export function renderSpel(el) {
 const rita = () => renderSpel(app);
 const ordning = (s) => { const k = (s.legNr - 1) % s.spelare.length; return [...s.spelare.slice(k), ...s.spelare.slice(0, k)]; };
 const N = (s, id) => esc(s.namn[id] ?? '?');
-const legInfo = (s) => [s.turnering ? esc(s.turnering.namn) : '', s.inst.forst_till > 1 ? `Leg ${s.legNr} · först till ${s.inst.forst_till}` : ''].filter(Boolean).join(' · ');
+const legInfo = (s) => [s.turnering ? esc(s.turnering.namn) : '', s.inst.forst_till > 1 ? `Leg ${s.legNr} · först till ${s.inst.forst_till}` : '',
+  s.distans ? '<span class="distans">på distans</span>' : ''].filter(Boolean).join(' · ');
 const avbrytKnapp = `<button class="btn liten" id="avbryt" type="button">Avbryt</button>`;
 const huvudKnappar = (kanAngra) => `<span class="huvudknappar"><button class="btn liten" id="angra" type="button"${kanAngra ? '' : ' disabled'}>Ångra</button>${avbrytKnapp}</span>`;
 function kopplaAvbryt() {
   app.querySelector('#avbryt')?.addEventListener('click', () => {
-    if (!confirm('Avbryta spelet? Det pågående leget/övningen sparas inte.')) return;
-    pagaende(null); tangent = null; location.hash = '#/';
+    const s = minns('pagaende');
+    if (!confirm(s?.distans ? 'Avbryta matchen för er båda? Det pågående leget sparas inte, färdiga legs finns kvar.'
+      : 'Avbryta spelet? Det pågående leget/övningen sparas inte.')) return;
+    avslutaDistans(s);
+    pagaende(null); tangent = null; location.hash = s?.turnering ? `#/turnering/${s.turnering.id}` : '#/';
   });
 }
 
@@ -163,20 +249,20 @@ function nastaLeg(s) {
 }
 function igen(s) { nyttSpel(s.typ, s.inst, s.spelare, s.namn); }
 
-function slutKnappar(s, angraText) {
+function slutKnappar(s, angraText, kanAngra = true) {
   const match = !s.klar || s.klar.match || s.klar.ovning;
   if (s.turnering && match) return `<p class="rad">
     <a class="btn primar" href="#/turnering/${s.turnering.id}" id="tillstart">Till ${esc(s.turnering.namn)}</a>
-    <button class="btn" id="angra" type="button">${angraText}</button></p>`;
+    <button class="btn" id="angra" type="button"${kanAngra ? '' : ' disabled'}>${angraText}</button></p>`;
   return `<p class="rad">
     ${match ? '<button class="btn primar" id="igen" type="button">Spela igen</button>' : '<button class="btn primar" id="nasta" type="button">Nästa leg</button>'}
-    <button class="btn" id="angra" type="button">${angraText}</button>
+    <button class="btn" id="angra" type="button"${kanAngra ? '' : ' disabled'}>${angraText}</button>
     ${match ? '<a class="btn" href="#/" id="tillstart">Till start</a>' : ''}</p>`;
 }
 function kopplaSlut(s, angra) {
   app.querySelector('#nasta')?.addEventListener('click', () => { nastaLeg(s); pagaende(s); rita(); });
   app.querySelector('#igen')?.addEventListener('click', () => { igen(s); rita(); });
-  app.querySelector('#tillstart')?.addEventListener('click', () => pagaende(null));
+  app.querySelector('#tillstart')?.addEventListener('click', () => { avslutaDistans(s); pagaende(null); });
   app.querySelector('#angra')?.addEventListener('click', () => {
     if (s.klar.vinnare !== undefined && s.klar.vinnare !== null) s.vunna[s.klar.vinnare]--;
     s.klar = null; angra(s); pagaende(s); rita();
@@ -211,13 +297,15 @@ function x01Vy(s) {
       ${stallning(s)}
       <div class="tavla">${kort}</div>
       <table class="tabell"><tr><th></th><th>Snitt</th><th>Första 9</th><th>Pilar</th><th>Dubbel</th></tr>${ord.map(rad).join('')}</table>
-      ${slutKnappar(s, 'Ångra sista besöket')}</div>`;
+      ${slutKnappar(s, 'Ångra sista besöket', egetSenast(s, r))}</div>`;
     return kopplaSlut(s, (x) => x.leg.rundor.pop());
   }
 
-  const k = kvar(tur);
+  const k = kvar(tur), vantar = vantarPa(s, tur);
   let panel;
-  if (fraga?.steg === 'ut') {
+  if (vantar !== null) {
+    panel = vantaPanel(s, vantar);
+  } else if (fraga?.steg === 'ut') {
     panel = `<p class="fraga">Utgång på ${fraga.kvar}! Med vilken pil?</p><div class="knappar tre">${[1, 2, 3].map((n) =>
       `<button class="btn stor" data-ut="${n}" type="button"${utgang(fraga.kvar, n) ? '' : ' disabled'}>${n}</button>`).join('')}</div>`;
   } else if (fraga?.steg === 'dubbel') {
@@ -232,7 +320,7 @@ function x01Vy(s) {
         <button class="btn primar" data-siffra="ok" type="button">OK</button></div>`;
   }
   app.innerHTML = `<div class="spelyta">
-    <div class="spelhuvud"><span>${start} · ${legInfo(s) || 'dubbel ut'}</span>${huvudKnappar(r.length || fraga)}</div>
+    <div class="spelhuvud"><span>${start} · ${legInfo(s) || 'dubbel ut'}</span>${huvudKnappar(fraga || egetSenast(s, r))}</div>
     <div class="tavla">${kort}</div>
     <p class="tur-text">${N(s, tur)} kastar – ${k} kvar</p>
     ${panel}
@@ -274,7 +362,7 @@ function x01Vy(s) {
     registrera(fraga.res.bust ? 0 : fraga.poang, fraga.pilar, d, fraga.res.ut);
   });
   app.querySelector('#angra').onclick = () => { if (fraga) fraga = null; else { r.pop(); } inmatning = ''; pagaende(s); rita(); };
-  tangent = fraga ? (e) => {
+  tangent = vantar !== null ? null : fraga ? (e) => {
     const n = Number(e.key);
     const b = app.querySelector(`[data-${fraga.steg === 'ut' ? 'ut' : 'dubbel'}="${n}"]`);
     if (b && !b.disabled) { e.preventDefault(); b.click(); }
@@ -303,20 +391,22 @@ function cricketVy(s) {
 
   if (s.klar) {
     app.innerHTML = `<div class="card"><h1>${ord.length > 1 ? `${N(s, s.klar.vinnare)} vann ${s.klar.match && s.inst.forst_till > 1 ? 'matchen' : 'leget'}!` : 'Alla stängda!'}</h1>
-      ${stallning(s)}${tabell}${slutKnappar(s, 'Ångra sista pilen')}</div>`;
+      ${stallning(s)}${tabell}${slutKnappar(s, 'Ångra sista pilen', egetSenast(s, p))}</div>`;
     return kopplaSlut(s, (x) => x.leg.pilar.pop());
   }
 
   app.innerHTML = `<div class="spelyta">
-    <div class="spelhuvud"><span>Cricket${legInfo(s) ? ` · ${legInfo(s)}` : ''}</span>${huvudKnappar(p.length)}</div>
+    <div class="spelhuvud"><span>Cricket${legInfo(s) ? ` · ${legInfo(s)}` : ''}</span>${huvudKnappar(egetSenast(s, p))}</div>
     ${tabell}
     <p class="tur-text">${N(s, tur)} – pil ${iRundan + 1}<span class="rundpilar">${[0, 1, 2].map((i) => `<span class="pil">${rundaPilar[i] ? segText(rundaPilar[i].segment) : '·'}</span>`).join('')}</span></p>
-    <div class="knappar cricketknappar">${CRICKET.map((n) => (n === 25
+    ${meddelande ? `<p class="msg">${esc(meddelande)}</p>` : ''}
+    ${vantarPa(s, tur) !== null ? vantaPanel(s, tur) : `<div class="knappar cricketknappar">${CRICKET.map((n) => (n === 25
       ? `<button class="btn" data-seg="S25" type="button">25</button><button class="btn" data-seg="D25" type="button">Bull</button><button class="btn miss" data-seg="M" type="button">Miss</button>`
       : ['S', 'D', 'T'].map((m) => `<button class="btn${m === 'T' ? ' trippel' : m === 'D' ? ' dubbel' : ''}" data-seg="${m}${n}" type="button">${m === 'S' ? n : `${m}${n}`}</button>`).join(''))).join('')}
-</div>
+</div>`}
     
   </div>`;
+  meddelande = '';
   kopplaAvbryt();
   app.querySelectorAll('[data-seg]').forEach((b) => b.onclick = () => {
     const mina = p.filter((x) => x.spelare_id === tur).length;

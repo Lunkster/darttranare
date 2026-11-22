@@ -12,6 +12,7 @@ Egen träningsapp för dart som ersätter My Dart Training, med synk mellan tele
 - **Bob's 27**, **Runt dubblarna** (3 pilar per dubbel), **JDC Challenge**
 - **Pilar mot ett mål** – 30–100 pilar mot valfritt mål, singel/dubbel/trippel/miss per pil
 - **Turneringar** (v0.5) – serie eller utslag i X01 eller cricket, tabell, matcher i valfri ordning och samtidigt
+- **Spel på distans** (v0.6) – två spelare i en turneringsmatch på var sin telefon; var och en skriver in sina kast och båda ser ställningen (avstämning var 1,5 s mot `live_match`)
 
 ## Struktur
 

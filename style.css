@@ -246,3 +246,14 @@ body.spelar .malvy { flex: 1 1 auto; min-height: 0; display: flex; flex-directio
 .vinnarrad { font-size: 22px; font-weight: 800; color: var(--guld); margin: 8px 0; }
 .turneringstabell tr.jag td { color: var(--gron-2); font-weight: 700; }
 @media (max-width: 380px) { .tabs a { padding: 8px 5px; font-size: 13.5px; } .tabs a.tab-ikon { padding: 8px 4px; } .tabs a.tab-ikon svg { width: 20px; height: 20px; } }
+
+/* Spel på distans */
+.vantar { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+  min-height: 140px; border: 2px dashed var(--linje); border-radius: var(--radie); padding: 16px; }
+.vantar p { margin: 4px 0; } .vantar p:first-child { font-size: clamp(20px, 4dvh, 30px); font-weight: 700; animation: puls 1.6s ease-in-out infinite; }
+@keyframes puls { 50% { opacity: .45; } }
+.distans { color: var(--gron-2); white-space: nowrap; } .distans::before { content: '● '; }
+.hurspela { margin-top: 14px; padding: 14px; border-radius: 10px; background: var(--kort-2); display: grid; gap: 10px; }
+.hurspela h3 { margin: 0; }
+.livemarke { color: var(--gron-2); font-size: 13px; }
+button.hemkort { width: 100%; text-align: left; font: inherit; border: 0; border-left: 4px solid var(--guld); cursor: pointer; }

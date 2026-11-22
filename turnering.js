@@ -1,8 +1,8 @@
 // Turneringar: lista, skapa (bara admin), tabell eller utslagsträd, matcher att spela.
 // Matchresultat och tabell räknas i spel.js ur vyn v_turnering_leg – inget lagras.
-import { api, rpc, esc, fmt, jag, arAdmin, minns, uuid, datum } from './lib.js?v=0.5.0';
-import { serieSchema, utslagSchema, matchlagen, turneringstabell } from './spel.js?v=0.5.0';
-import { startaTurneringsmatch } from './spela.js?v=0.5.0';
+import { api, rpc, esc, fmt, jag, arAdmin, minns, uuid, datum } from './lib.js?v=0.6.0';
+import { serieSchema, utslagSchema, matchlagen, turneringstabell } from './spel.js?v=0.6.0';
+import { startaTurneringsmatch, startaDistans, gaMed } from './spela.js?v=0.6.0';
 
 const formText = (t) => `${t.format === 'serie' ? (t.installningar?.dubbelmote ? 'Serie, dubbelmöte' : 'Serie') : 'Utslag'} · ${t.typ === 'x01' ? t.installningar?.start ?? 501 : 'Cricket'} · först till ${t.installningar?.forst_till ?? 1}`;
 const rundnamn = (r, antal) => ({ 0: 'Final', 1: 'Semifinal', 2: 'Kvartsfinal' }[antal - r] ?? `Runda ${r}`);
@@ -22,14 +22,19 @@ export async function hamtaTurneringar() {
 }
 
 export const minaMatcher = (t, mig) => t.lagen.filter((m) => m.spelbar && (m.p1 === mig || m.p2 === mig));
+// Matcher som spelas på distans just nu (läget ligger i live_match tills matchen är slut)
+export const hamtaLive = () => api('live_match?select=turnering_match,version,tillstand').catch(() => []);
 
-function starta(t, m, alla) {
+// hur = 'har' (en skärm) eller 'distans' (var sin telefon)
+async function starta(t, m, alla, hur) {
   const namn = Object.fromEntries(alla.map((s) => [s.id, s.namn]));
   const p = minns('pagaende');
   if (p?.turnering?.match === m.id && !p.klar) { location.hash = '#/spel'; return; }
   if (p && !p.klar && !confirm('Det finns ett pågående spel. Avbryta det och starta matchen?')) return;
   const inst = t.typ === 'x01' ? { start: t.installningar?.start ?? 501, forst_till: t.installningar?.forst_till ?? 1 } : { forst_till: t.installningar?.forst_till ?? 1 };
-  startaTurneringsmatch(t.typ, inst, [m.p1, m.p2], namn, { match: m.id, id: t.id, namn: t.namn, vunna: { [m.p1]: m.legs1, [m.p2]: m.legs2 } });
+  const turnering = { match: m.id, id: t.id, namn: t.namn, vunna: { [m.p1]: m.legs1, [m.p2]: m.legs2 } };
+  if (hur === 'distans') return startaDistans(t.typ, inst, [m.p1, m.p2], namn, turnering, jag(alla).id);
+  startaTurneringsmatch(t.typ, inst, [m.p1, m.p2], namn, turnering);
 }
 
 export async function renderTurneringar(el, alla) {
@@ -50,16 +55,28 @@ export async function renderTurneringar(el, alla) {
 }
 
 export async function renderTurnering(el, alla, id) {
-  const t = (await hamtaTurneringar()).find((x) => x.id === id);
+  const [lista, live] = await Promise.all([hamtaTurneringar(), hamtaLive()]);
+  const t = lista.find((x) => x.id === id);
   if (!t) { el.innerHTML = '<div class="card"><h1>Turneringen finns inte</h1><p class="muted">Eller så är du inte med i den.</p><a class="btn" href="#/turneringar">Alla turneringar</a></div>'; return; }
   const mig = jag(alla)?.id, N = (pid) => (pid === null || pid === undefined ? '–' : esc(alla.find((s) => s.id === pid)?.namn ?? '?'));
   const mina = minaMatcher(t, mig);
   const kanSpela = (m) => m.spelbar && (m.p1 === mig || m.p2 === mig || t.deltagare.includes(mig) || arAdmin());
+  const harKonto = (pid) => !!alla.find((s) => s.id === pid)?.anvandare;
+  // På distans: båda har konto och jag är en av dem
+  const kanDistans = (m) => (m.p1 === mig || m.p2 === mig) && harKonto(m.p1) && harKonto(m.p2);
+  const liveFor = (m) => live.find((l) => l.turnering_match === m.id);
+  const lokal = minns('pagaende');
+  const knapp = (m) => {
+    if (!kanSpela(m)) return '<span></span>';
+    if (lokal?.turnering?.match === m.id && !lokal.klar) return `<a class="btn liten primar" href="#/spel">Fortsätt</a>`;
+    if (liveFor(m)) return kanDistans(m) ? `<button class="btn liten primar" data-gamed="${m.id}" type="button">Gå med</button>` : '<span class="livemarke">pågår</span>';
+    return `<button class="btn liten${m.p1 === mig || m.p2 === mig ? ' primar' : ''}" data-spela="${m.id}" type="button">${m.pagar ? 'Fortsätt' : 'Spela'}</button>`;
+  };
   const matchrad = (m) => `<div class="matchrad${m.klar ? ' klar' : ''}">
       <span class="${m.vinnare === m.p1 && m.p1 !== null ? 'vann' : ''}">${N(m.p1)}</span>
       <span class="res">${m.walkover ? 'w.o.' : m.klar || m.pagar ? `${m.legs1}–${m.legs2}` : 'mot'}</span>
       <span class="${m.vinnare === m.p2 && m.p2 !== null ? 'vann' : ''}">${N(m.p2)}</span>
-      ${kanSpela(m) ? `<button class="btn liten${m.p1 === mig || m.p2 === mig ? ' primar' : ''}" data-spela="${m.id}" type="button">${m.pagar ? 'Fortsätt' : 'Spela'}</button>` : '<span></span>'}
+      ${knapp(m)}
     </div>`;
   const rundor = [...new Set(t.lagen.map((m) => m.runda))];
   const tabell = turneringstabell(t.deltagare, t.lagen);
@@ -69,6 +86,7 @@ export async function renderTurnering(el, alla, id) {
       <p class="muted">${formText(t)} · skapad ${datum(t.skapad)}</p>
       ${t.klar ? `<p class="vinnarrad">🏆 ${N(t.format === 'utslag' ? t.lagen.at(-1)?.vinnare : tabell[0]?.spelare_id)}</p>` : ''}
       ${mina.length ? `<h3>Dina matcher</h3>${mina.map(matchrad).join('')}` : ''}
+      <div id="hurspela"></div>
     </div>
     ${t.format === 'serie' ? `<div class="card"><h2>Tabell</h2>
       <table class="tabell turneringstabell"><tr><th></th><th>M</th><th>V</th><th>F</th><th>Legs</th><th>P</th><th>${t.typ === 'x01' ? 'Snitt' : 'MPR'}</th></tr>
@@ -80,7 +98,20 @@ export async function renderTurnering(el, alla, id) {
       <p class="forklaring">Matcherna kan spelas i vilken ordning som helst och samtidigt på olika ställen.</p>
     </div>
     ${arAdmin() ? '<div class="card"><button class="btn liten fara" id="tabort" type="button">Ta bort turneringen</button> <span class="forklaring">Spelade legs finns kvar som vanliga spel.</span></div>' : ''}`;
-  el.querySelectorAll('[data-spela]').forEach((b) => b.onclick = () => starta(t, t.lagen.find((m) => m.id === b.dataset.spela), alla));
+  const fel = (e) => alert(e.natfel || e instanceof TypeError ? 'Spel på distans kräver nät.' : e.message);
+  el.querySelectorAll('[data-spela]').forEach((b) => b.onclick = () => {
+    const m = t.lagen.find((x) => x.id === b.dataset.spela);
+    if (!kanDistans(m)) return starta(t, m, alla, 'har');
+    // Båda har konto: fråga hur matchen spelas
+    const ruta = el.querySelector('#hurspela');
+    ruta.innerHTML = `<div class="hurspela"><h3>${N(m.p1)} mot ${N(m.p2)} – hur spelar ni?</h3>
+      <button class="btn primar stor" data-hur="har" type="button">På den här skärmen</button>
+      <button class="btn stor" data-hur="distans" type="button">På distans – var sin telefon</button>
+      <p class="forklaring">På distans skriver var och en in sina egna kast, och båda ser ställningen direkt.</p></div>`;
+    ruta.querySelectorAll('[data-hur]').forEach((h) => h.onclick = () => starta(t, m, alla, h.dataset.hur).catch(fel));
+    ruta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  el.querySelectorAll('[data-gamed]').forEach((b) => b.onclick = () => gaMed(b.dataset.gamed, mig).catch(fel));
   el.querySelector('#tabort')?.addEventListener('click', async () => {
     if (!confirm(`Ta bort turneringen ${t.namn}? Det går inte att ångra.`)) return;
     try { await rpc('ta_bort_turnering', { tid: t.id }); location.hash = '#/turneringar'; } catch (e) { alert(e.message); }
