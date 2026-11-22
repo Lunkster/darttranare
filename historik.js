@@ -1,6 +1,6 @@
-// Historik: alla spel, nyast först, med möjlighet att ta bort. Spel i offlinekön visas överst.
-import { api, rpc, esc, fmt, proc, tid, ko, skickaKo, jag } from './lib.js?v=0.3.1';
-import { TYPER } from './spel.js?v=0.3.1';
+// Historik: spel man själv var med i (RLS), nyast först, med möjlighet att ta bort. Spel i offlinekön visas överst.
+import { api, rpc, esc, fmt, proc, tid, ko, skickaKo } from './lib.js?v=0.4.0';
+import { TYPER } from './spel.js?v=0.4.0';
 
 export async function renderHistorik(el, alla) {
   const [x01, ovr] = await Promise.all([
@@ -15,8 +15,6 @@ export async function renderHistorik(el, alla) {
   const lista = [...spel.values()].sort((a, b) => (a.start < b.start ? 1 : -1));
   const kon = ko();
   const namn = (id) => alla.find((s) => s.id === id)?.namn ?? '?';
-  const mig = jag(alla)?.id;
-  // Bara spel man själv var med i kan tas bort (databasen släpper också igenom den som skapade spelet)
 
   const resultat = (s, r) => {
     if (s.typ === 'x01') return `snitt ${fmt(r.snitt, 1)}${r.pilar_dubbel ? ` · ut ${proc(r.checkouts, r.pilar_dubbel)}` : ''}`;
@@ -32,6 +30,7 @@ export async function renderHistorik(el, alla) {
   };
 
   el.innerHTML = `<div class="card"><h1>Historik</h1>
+    <p class="forklaring">Spel du själv var med i.</p>
     ${kon.length ? `<div class="kolista"><h3>Väntar på att skickas (${kon.length})</h3>
       ${kon.map((s) => `<div class="hrad"><span class="tid">${tid(s.start)}</span> ${esc(TYPER[s.typ].namn)} – ${esc(s.spelare.map((x) => namn(x.spelare_id)).join(', '))}</div>`).join('')}
       <button class="btn liten" id="skicka" type="button">Skicka nu</button> <span id="skickamsg" class="msg"></span></div>` : ''}
@@ -39,7 +38,7 @@ export async function renderHistorik(el, alla) {
     ${lista.map((s) => `<details class="hrad">
       <summary><span class="tid">${tid(s.start)}</span> <b>${s.typ === 'x01' ? 'X01 ' : ''}${rubrik(s)}</b>${s.kalla === 'mdt' ? ' <span class="etikett">MDT</span>' : ''}
         <span class="hres">${s.rader.sort((a, b) => b.vinnare - a.vinnare).map((r) => `${r.vinnare && s.rader.length > 1 ? '🏆 ' : ''}${esc(r.namn)} ${resultat(s, r)}`).join(' · ')}</span></summary>
-      ${s.rader.some((r) => r.spelare_id === mig) ? `<p><button class="btn liten fara" data-tabort="${s.id}" type="button">Ta bort spelet</button></p>` : '<p class="muted liten">Bara spelarna i spelet kan ta bort det.</p>'}</details>`).join('')}
+      <p><button class="btn liten fara" data-tabort="${s.id}" type="button">Ta bort spelet</button></p></details>`).join('')}
   </div>`;
 
   el.querySelector('#skicka')?.addEventListener('click', async () => {

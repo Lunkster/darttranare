@@ -1,7 +1,7 @@
 // Hela flödet mot attrappen: inloggning, X01 med bust och utgång, ogiltig poäng, Bob's 27, solocricket med ångra,
 // offline-kö, historik med ta bort och statistik. Kör: tests/attrapp.html?flode – slutar med "fel: 0".
-import { db, KOD, EPOST } from './attrapp.js?v=0.3.1';
-import { ko } from '../lib.js?v=0.3.1';
+import { db, KOD, EPOST } from './attrapp.js?v=0.4.0';
+import { ko } from '../lib.js?v=0.4.0';
 
 const ut = document.getElementById('testut');
 let fel = 0;
@@ -40,6 +40,8 @@ try {
   kolla('två spelare i ordning', knapp('1 Anna') && knapp('2 Bo'));
   await klick('#starta');
   kolla('X01 startat', $('.display') !== null && text('.tur-text').includes('Anna'));
+  const ingenScroll = () => document.body.classList.contains('spelar') && document.documentElement.scrollHeight <= innerHeight + 1;
+  kolla('X01 fyller skärmen utan scroll', ingenScroll(), `${document.documentElement.scrollHeight}/${innerHeight}`);
   await poang(179);
   kolla('179 avvisas', text('#msg').includes('179'), text('#msg'));
   await poang(100); await poang(60); await poang(180); await poang(26); await poang(180);
@@ -81,7 +83,8 @@ try {
 
   // Solocricket med ångra
   await klick(knapp('Till start')); await klick('[data-typ="cricket"]'); await klick('#starta');
-  for (const s of ['T20', 'T19', 'S5', 'M']) await klick(`[data-seg="${s === 'S5' ? 'M' : s}"]`);
+  for (const s of ['T20', 'T19', 'M', 'M']) await klick(`[data-seg="${s}"]`);
+  kolla('cricket fyller skärmen utan scroll', ingenScroll(), `${document.documentElement.scrollHeight}/${innerHeight}`);
   await klick('#angra');
   kolla('ångra pil i cricket', text('.tur-text').includes('pil 1'), text('.tur-text'));
   for (const s of ['T18', 'T17', 'T16', 'T15', 'D25', 'S25']) await klick(`[data-seg="${s}"]`);
@@ -102,12 +105,11 @@ try {
 
   // Historik och ta bort
   await ga('#/historik');
-  kolla('historiken listar 5 spel (även Bos)', document.querySelectorAll('details.hrad').length === 5, String(document.querySelectorAll('details.hrad').length));
+  kolla('historiken listar Annas 4 spel – inte Bos', document.querySelectorAll('details.hrad').length === 4 && !$('[data-tabort="bo-spel-1"]'), String(document.querySelectorAll('details.hrad').length));
   kolla('historik visar snitt', text('#app').includes('snitt'));
-  kolla('Bos spel kan inte tas bort av Anna', !$('[data-tabort="bo-spel-1"]') && text('#app').includes('Bara spelarna i spelet'));
   await klick(`[data-tabort="${b.id}"]`); await vanta(300);
-  kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 4);
-  const { rpc } = await import('../lib.js?v=0.3.1');
+  kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 3);
+  const { rpc } = await import('../lib.js?v=0.4.0');
   let nekad = false; try { await rpc('ta_bort_spel', { sid: 'bo-spel-1' }); } catch { nekad = true; }
   kolla('servern nekar att ta bort Bos spel', nekad && db.spel.some((s) => s.id === 'bo-spel-1'));
   kolla('Annas spel är skapade av Anna', db.spel.filter((s) => s.id !== 'bo-spel-1').every((s) => s.skapad_av === 'u-anna'));
@@ -115,14 +117,17 @@ try {
   // Statistik
   await ga('#/statistik');
   kolla('statistiken visar Anna som förval', $('[data-spelare].vald')?.textContent === 'Anna');
+  await klick(knapp('Bo')); await vanta(300);
+  kolla('Bos statistik utan Bos egna spel', !text('#app').includes('Pilar mot ett mål') && text('#app').includes('bara spel där du själv var med'));
+  await klick(knapp('Anna')); await vanta(300);
   kolla('statistik X01', text('#app').includes('X01') && document.querySelectorAll('svg.diagram').length >= 2, String(document.querySelectorAll('svg.diagram').length));
   kolla('cricket-MPR 7', text('#app').includes('7,00'));
   kolla('träff per dubbel', text('#app').includes('Bull') && text('#app').includes('33 %'));
   kolla('inget amerikanskt format', !/\b(AM|PM)\b|\d{1,2}\/\d{1,2}\/\d{4}/.test(document.body.innerText));
 
   // Min sida: alias och val under spelet
-  await klick('#inloggad a'); await vanta(300);
-  kolla('min sida', text('h1') === 'Min sida' && $('#alias').value === 'Anna');
+  await klick('#minsida'); await vanta(300);
+  kolla('min sida via knappen i menyn', text('h1') === 'Min sida' && $('#alias').value === 'Anna' && $('#minsida').classList.contains('active'));
   $('#alias').value = 'bo'; $('#aliasform').requestSubmit(); await vanta(300);
   kolla('alias som används nekas', text('#aliasmsg').includes('används redan') && db.spelare[0].namn === 'Anna', text('#aliasmsg'));
   $('#alias').value = 'Annie'; $('#aliasform').requestSubmit(); await vanta(300);

@@ -1,9 +1,9 @@
 // Service worker: appen går att lägga på hemskärmen och fungerar offline. Hämtar alltid från nätet först
 // (så att nya versioner syns direkt) och använder sparade filer bara när nätet saknas.
 // Data från Supabase cachas inte – spel sparas lokalt i appen och skickas när nät finns.
-const CACHE = 'dart-v4';
-const FILER = ['./', 'index.html', 'style.css?v=0.3.1', 'app.js?v=0.3.1', 'lib.js?v=0.3.1', 'spel.js?v=0.3.1', 'spela.js?v=0.3.1',
-  'historik.js?v=0.3.1', 'statistik.js?v=0.3.1', 'diagram.js?v=0.3.1', 'jag.js?v=0.3.1', 'nyheter.js?v=0.3.1', 'ikon.svg?v=0.3.1', 'manifest.webmanifest'];
+const CACHE = 'dart-v5';
+const FILER = ['./', 'index.html', 'style.css?v=0.4.0', 'app.js?v=0.4.0', 'lib.js?v=0.4.0', 'spel.js?v=0.4.0', 'spela.js?v=0.4.0',
+  'historik.js?v=0.4.0', 'statistik.js?v=0.4.0', 'diagram.js?v=0.4.0', 'jag.js?v=0.4.0', 'nyheter.js?v=0.4.0', 'ikon.svg?v=0.4.0', 'manifest.webmanifest'];
 self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILER)).catch(() => {})); });
 self.addEventListener('activate', (e) => e.waitUntil(
   caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()),

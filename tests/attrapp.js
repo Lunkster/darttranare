@@ -1,6 +1,6 @@
 // Attrapp för Supabase (PostgREST + auth) i minnet – testerna rör aldrig riktiga databasen.
 // Ersätter window.fetch innan appen laddas. Påhittade spelare. Vyerna räknas med samma regler som i SQL.
-import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.3.1';
+import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.4.0';
 
 export const KOD = 'kod123';
 export const EPOST = 'anna@exempel.se';
@@ -20,10 +20,13 @@ const farAndra = (sid) => {
   return s.skapad_av === db.inloggad || s.spelare.some((x) => x.spelare_id === mig);
 };
 
+// Samma regel som dart.ser_spel: spel man skapat eller är med i
+const syns = (s) => s.skapad_av === db.inloggad || s.spelare.some((x) => db.spelare.find((p) => p.id === x.spelare_id)?.anvandare === db.inloggad);
+const synliga = () => db.spel.filter(syns);
 const v = {
   spelnamn: (id) => db.spelare.find((s) => s.id === id)?.namn,
   x01() {
-    return db.spel.filter((s) => s.typ === 'x01').flatMap((s) => s.spelare.map((sp) => {
+    return synliga().filter((s) => s.typ === 'x01').flatMap((s) => s.spelare.map((sp) => {
       const r = s.rundor.filter((x) => x.spelare_id === sp.spelare_id), p = r.reduce((a, x) => a + x.poang, 0), n = r.reduce((a, x) => a + (x.pilar ?? 3), 0);
       const f9 = r.filter((x) => x.nr <= 3);
       return {
@@ -37,7 +40,7 @@ const v = {
     }));
   },
   resultat() {
-    return db.spel.filter((s) => s.typ !== 'x01').flatMap((s) => s.spelare.map((sp) => {
+    return synliga().filter((s) => s.typ !== 'x01').flatMap((s) => s.spelare.map((sp) => {
       const pil = s.pilar.filter((x) => x.spelare_id === sp.spelare_id), sm = ovningSumma(s.typ, pil);
       const rundor = new Set(pil.map((x) => x.runda)).size + (sp.resultat?.rundor ?? 0);
       const cm = pil.filter((x) => [15, 16, 17, 18, 19, 20, 25].includes(nummer(x.segment))).reduce((a, x) => a + mult(x.segment), 0) + (sp.resultat?.marks ?? 0);
@@ -50,7 +53,7 @@ const v = {
   },
   mal() {
     const m = new Map();
-    db.spel.forEach((s) => s.pilar.filter((p) => p.mal).forEach((p) => {
+    synliga().forEach((s) => s.pilar.filter((p) => p.mal).forEach((p) => {
       const k = `${p.spelare_id}|${p.mal}|${s.typ}`;
       if (!m.has(k)) m.set(k, { spelare_id: p.spelare_id, namn: v.spelnamn(p.spelare_id), mal: p.mal, typ: s.typ, pilar: 0, traffar: 0 });
       m.get(k).pilar++; if (traff(p.mal, p.segment)) m.get(k).traffar++;

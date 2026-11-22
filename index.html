@@ -5,24 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0f1512">
   <title>Darttränaren</title>
-  <link rel="icon" href="ikon.svg?v=0.3.1" type="image/svg+xml">
+  <link rel="icon" href="ikon.svg?v=0.4.0" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Dart">
-  <link rel="stylesheet" href="style.css?v=0.3.1">
+  <link rel="stylesheet" href="style.css?v=0.4.0">
 </head>
 <body>
   <header class="topbar">
     <a href="#/" class="brand" aria-label="Till start">
-      <img src="ikon.svg?v=0.3.1" alt="" class="logo" aria-hidden="true"><span>Dart</span>
+      <img src="ikon.svg?v=0.4.0" alt="" class="logo" aria-hidden="true"><span>Dart</span>
     </a>
     <nav class="tabs" aria-label="Huvudmeny">
       <a href="#/" data-route="spela">Spela</a>
       <a href="#/historik" data-route="historik">Historik</a>
       <a href="#/statistik" data-route="statistik">Statistik</a>
+      <a href="#/jag" data-route="jag" class="tab-ikon" id="minsida" aria-label="Min sida" title="Min sida"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></a>
       <a href="#/nyheter" data-route="nyheter" class="tab-ikon" id="info" aria-label="Nytt i appen" title="Nytt i appen"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/></svg></a>
     </nav>
   </header>
@@ -34,10 +35,10 @@
   <footer class="foot">
     <span id="kostatus"></span>
     <button type="button" class="btn installera" id="installera" hidden>Installera som app</button>
-    <span id="inloggad"></span><span id="version">v0.3.1</span> · <a href="#/loggaut" id="loggaut" hidden>Logga ut</a>
+    <span id="inloggad"></span><span id="version">v0.4.0</span> · <a href="#/loggaut" id="loggaut" hidden>Logga ut</a>
   </footer>
 
-  <script type="module" src="app.js?v=0.3.1"></script>
+  <script type="module" src="app.js?v=0.4.0"></script>
   <script>
     if ('serviceWorker' in navigator && !location.pathname.includes('/tests/')) navigator.serviceWorker.register('sw.js').catch(() => {});
     // Knapp för att installera appen (Chrome, Edge, Android). Visas bara när webbläsaren erbjuder installation.

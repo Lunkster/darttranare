@@ -11,5 +11,6 @@
 - Nytt i appen (i-knappen) visar `nyheter.json`. Skriv kort i Obsidian *Darttränaren - Nyheter* (en mening per punkt, version i slutet), kör `python3 ~/Dokument/Claude/Darttranare/skript/nyheter.py` och committa `nyheter.json`.
 - Testa före commit: `tests/logik.html` och `tests/attrapp.html?flode` ska båda visa `fel: 0` (se `tests/README.md`).
 - Gränssnittet: fokus på poängen, stora knappar för stora fingrar, extrafunktioner valbara (`val()` i `lib.js`, Min sida) – princip från Sten 2026-11-22.
+- Under pågående spel får inget scrolla, på någon skärmstorlek (Henrik 2026-11-22). Prova nya spelvyer i 360×640, 375×667, 768×1024, 1024×768 och 740×360.
 - Importen hittar spelare på `spelare.mdt_namn` – alias (`namn`) byts fritt i appen.
 - **Ny person i gruppen:** Henrik skapar kontot i Supabase (Authentication → Users → Add user, Auto Confirm) och säger e-post och spelarnamn. Claude sätter rollen och kopplar spelaren (se kommentaren överst i `supabase/04_konton.sql`) – finns personen redan som gäst kopplas den raden, så historiken följer med.

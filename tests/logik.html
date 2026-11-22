@@ -3,7 +3,7 @@
 <style>body{font:15px system-ui;background:#111;color:#eee;padding:16px}.ok{color:#5c5}.fel{color:#f66;font-weight:700}</style></head>
 <body><h1>Logiktester</h1><pre id="ut"></pre>
 <script type="module">
-import * as S from '../spel.js?v=0.3.1';
+import * as S from '../spel.js?v=0.4.0';
 const ut = document.getElementById('ut'); let fel = 0, ok = 0;
 const kolla = (namn, villkor, extra = '') => { villkor ? ok++ : fel++; ut.innerHTML += `<span class="${villkor ? 'ok' : 'fel'}">${villkor ? 'OK ' : 'FEL'}</span> ${namn} ${extra}\n`; };
 const lika = (namn, a, b) => kolla(namn, JSON.stringify(a) === JSON.stringify(b), `→ ${JSON.stringify(a)}${JSON.stringify(a) === JSON.stringify(b) ? '' : ` (väntat ${JSON.stringify(b)})`}`);

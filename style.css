@@ -156,3 +156,46 @@ table.cricket tr.poang td, table.cricket tr:last-child td { font-size: 16px; }
 .ny-lista { margin: 0; padding-left: 20px; }
 .ny-lista li { margin: 0 0 8px; }
 .ny-ver { color: var(--text-3); font-size: 13px; white-space: nowrap; }
+
+/* Pågående spel: allt får plats på skärmen, inget scrollar. Storlekarna följer skärmens höjd (dvh). */
+.huvudknappar { display: flex; gap: 6px; }
+body.spelar { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
+body.spelar .foot { display: none; }
+body.spelar .topbar { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: 4px; }
+body.spelar main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 8px 10px max(8px, env(safe-area-inset-bottom)); }
+body.spelar .spelyta { flex: 1; min-height: 0; gap: clamp(4px, 1dvh, 10px); }
+body.spelar .spelyta > * { flex: none; }
+body.spelar .spelyta > .knappar { flex: 1 1 0; min-height: 0; grid-auto-rows: 1fr; }
+body.spelar .spelyta .knappar .btn { min-height: 0; height: 100%; }
+body.spelar .spelyta .msg { margin: 0; min-height: 0; }
+body.spelar .spelyta .msg:empty { display: none; }
+body.spelar .spelhuvud .btn.liten { min-height: 40px; padding: 4px 12px; }
+body.spelar .spelarkort { padding: clamp(4px, 1dvh, 10px) 12px; }
+body.spelar .spelarkort .kvar { font-size: clamp(30px, 7dvh, 64px); }
+body.spelar .display { font-size: clamp(28px, 6dvh, 56px); padding: 2px; }
+body.spelar .display.tom { font-size: clamp(20px, 4dvh, 30px); padding: clamp(4px, 1.4dvh, 13px); }
+body.spelar .knappar.knappsats .btn { font-size: clamp(22px, 4.5dvh, 40px); }
+body.spelar .fraga { font-size: clamp(16px, 2.8dvh, 22px); }
+body.spelar .malvy { padding: clamp(4px, 1dvh, 10px); }
+body.spelar .malvy .mal { font-size: clamp(34px, 9dvh, 80px); }
+body.spelar .pil { min-height: 0; padding: clamp(3px, 0.8dvh, 8px); }
+body.spelar table.cricket th, body.spelar table.cricket td { padding: 0 6px; line-height: 1.25; }
+body.spelar table.cricket td { font-size: clamp(14px, 2.6dvh, 22px); }
+body.spelar table.cricket tr.poang td, body.spelar table.cricket tr:last-child td, body.spelar table.cricket th { font-size: clamp(12px, 2dvh, 16px); }
+body.spelar .cricketknappar .btn { font-size: clamp(15px, 2.6dvh, 22px); padding: 2px; }
+body.spelar .tavla { gap: 6px; }
+body.spelar .topbar { display: none; }   /* menyn behövs inte mitt i spelet – Avbryt tar en ut */
+body.spelar .rundpilar { display: inline-flex; gap: 6px; margin-left: 10px; }
+body.spelar .rundpilar .pil { padding: 0 8px; min-width: 44px; display: inline-block; }
+.cricketknappar .miss { grid-column: auto; min-height: 0; }
+/* Liggande skärm: poängen till vänster, knapparna till höger */
+@media (orientation: landscape) {
+  body.spelar .spelyta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-rows: repeat(5, auto) 1fr; column-gap: 12px; align-content: start; }
+  body.spelar .spelyta > * { grid-column: 1; }
+  body.spelar .spelyta > .knappar { grid-column: 2; grid-row: 1 / -1; height: 100%; margin-top: 0; }
+  body.spelar .spelyta > .knappar:not(.knappsats):not(.cricketknappar) { flex: none; height: 100%; }
+  body.spelar .malvy { grid-row: auto; }
+}
+/* Övningar och frågor: knapparna längst ner med rimlig höjd, målet tar resten */
+body.spelar .spelyta > .knappar:not(.knappsats):not(.cricketknappar) { flex: 0 1 clamp(110px, 36dvh, 340px); margin-top: auto; }
+body.spelar .malvy { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; }

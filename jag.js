@@ -1,5 +1,5 @@
 // Min sida: byta alias och välja vad som visas under spelet (sparas i den här enheten).
-import { write, esc, jag, minns, val } from './lib.js?v=0.3.1';
+import { write, esc, jag, minns, val } from './lib.js?v=0.4.0';
 
 const VAL = [
   ['forslag', 'Utgångsförslag i X01', 'Visar t.ex. T20 T19 D12 när du kan gå ut.'],

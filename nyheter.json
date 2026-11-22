@@ -2,6 +2,9 @@
  {
   "datum": "2026-11-22",
   "punkter": [
+   "**Ingen scroll under spelet:** spelet fyller skärmen på telefon och surfplatta, stående som liggande. Ångra sitter uppe bredvid Avbryt. (v0.4.0)",
+   "**Bara dina spel:** du ser bara spel du själv var med i, och statistiken för en kompis visar era gemensamma spel. (v0.4.0)",
+   "**Min sida** har fått en egen knapp uppe i menyn. (v0.4.0)",
    "**Nytt i appen:** tryck på ⓘ uppe till höger för att se vad som har ändrats. (v0.3.1)",
    "**Min sida:** tryck på ditt namn längst ner för att byta namn och välja vad som visas under spelet. (v0.3.0)",
    "**Större knappar** och bara poängen i fokus under spelet – snitt och pilar slår du på själv. (v0.3.0)",

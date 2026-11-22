@@ -1,10 +1,10 @@
 // Starta och spela: X01, cricket och övningar. Pågående spel sparas lokalt efter varje kast,
 // färdiga legs/övningar läggs i offlinekön och skickas med spara_spel.
-import { esc, fmt, proc, minns, uuid, write, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.3.1';
+import { esc, fmt, proc, minns, uuid, write, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.4.0';
 import {
   TYPER, besok, fragaDubbel, utgang, kanGaUt, x01Snitt, plan, knappar, ovningSumma, ovningSlut,
   cricketLage, CRICKET, marksText, segText, malText, traff,
-} from './spel.js?v=0.3.1';
+} from './spel.js?v=0.4.0';
 
 let app = null;
 let inmatning = '';      // X01: siffror som skrivits in
@@ -113,15 +113,18 @@ export function renderSpel(el) {
   app = el ?? app;
   const s = pagaende();
   if (!s) { location.hash = '#/'; return; }
-  if (s.typ === 'x01') return x01Vy(s);
-  if (s.typ === 'cricket') return cricketVy(s);
-  return ovningVy(s);
+  if (s.typ === 'x01') x01Vy(s);
+  else if (s.typ === 'cricket') cricketVy(s);
+  else ovningVy(s);
+  // Pågående spel fyller skärmen utan scroll (Henrik 2026-11-22); resultatsidan scrollar som vanligt
+  document.body.classList.toggle('spelar', !pagaende()?.klar);
 }
 const rita = () => renderSpel(app);
 const ordning = (s) => { const k = (s.legNr - 1) % s.spelare.length; return [...s.spelare.slice(k), ...s.spelare.slice(0, k)]; };
 const N = (s, id) => esc(s.namn[id] ?? '?');
 const legInfo = (s) => (s.inst.forst_till > 1 ? `Leg ${s.legNr} · först till ${s.inst.forst_till}` : '');
 const avbrytKnapp = `<button class="btn liten" id="avbryt" type="button">Avbryt</button>`;
+const huvudKnappar = (kanAngra) => `<span class="huvudknappar"><button class="btn liten" id="angra" type="button"${kanAngra ? '' : ' disabled'}>Ångra</button>${avbrytKnapp}</span>`;
 function kopplaAvbryt() {
   app.querySelector('#avbryt')?.addEventListener('click', () => {
     if (!confirm('Avbryta spelet? Det pågående leget/övningen sparas inte.')) return;
@@ -217,12 +220,12 @@ function x01Vy(s) {
         <button class="btn primar" data-siffra="ok" type="button">OK</button></div>`;
   }
   app.innerHTML = `<div class="spelyta">
-    <div class="spelhuvud"><span>${start} · ${legInfo(s) || 'dubbel ut'}</span>${avbrytKnapp}</div>
+    <div class="spelhuvud"><span>${start} · ${legInfo(s) || 'dubbel ut'}</span>${huvudKnappar(r.length || fraga)}</div>
     <div class="tavla">${kort}</div>
     <p class="tur-text">${N(s, tur)} kastar – ${k} kvar</p>
     ${panel}
     <p class="msg" id="msg">${esc(meddelande)}</p>
-    <p class="rad"><button class="btn liten" id="angra" type="button"${r.length || fraga ? '' : ' disabled'}>Ångra</button></p>
+    
   </div>`;
   meddelande = '';
   kopplaAvbryt();
@@ -293,15 +296,14 @@ function cricketVy(s) {
   }
 
   app.innerHTML = `<div class="spelyta">
-    <div class="spelhuvud"><span>Cricket${legInfo(s) ? ` · ${legInfo(s)}` : ''}</span>${avbrytKnapp}</div>
+    <div class="spelhuvud"><span>Cricket${legInfo(s) ? ` · ${legInfo(s)}` : ''}</span>${huvudKnappar(p.length)}</div>
     ${tabell}
-    <p class="tur-text">${N(s, tur)} – pil ${iRundan + 1}</p>
-    <div class="pilrad">${[0, 1, 2].map((i) => `<span class="pil">${rundaPilar[i] ? segText(rundaPilar[i].segment) : ''}</span>`).join('')}</div>
+    <p class="tur-text">${N(s, tur)} – pil ${iRundan + 1}<span class="rundpilar">${[0, 1, 2].map((i) => `<span class="pil">${rundaPilar[i] ? segText(rundaPilar[i].segment) : '·'}</span>`).join('')}</span></p>
     <div class="knappar cricketknappar">${CRICKET.map((n) => (n === 25
-      ? `<button class="btn" data-seg="S25" type="button">25</button><button class="btn" data-seg="D25" type="button">Bull</button><span></span>`
+      ? `<button class="btn" data-seg="S25" type="button">25</button><button class="btn" data-seg="D25" type="button">Bull</button><button class="btn miss" data-seg="M" type="button">Miss</button>`
       : ['S', 'D', 'T'].map((m) => `<button class="btn${m === 'T' ? ' trippel' : m === 'D' ? ' dubbel' : ''}" data-seg="${m}${n}" type="button">${m === 'S' ? n : `${m}${n}`}</button>`).join(''))).join('')}
-      <button class="btn miss" data-seg="M" type="button">Miss</button></div>
-    <p class="rad"><button class="btn liten" id="angra" type="button"${p.length ? '' : ' disabled'}>Ångra</button></p>
+</div>
+    
   </div>`;
   kopplaAvbryt();
   app.querySelectorAll('[data-seg]').forEach((b) => b.onclick = () => {
@@ -361,7 +363,7 @@ function ovningVy(s) {
   const mig = per.get(tur), mal = pl[mig.runda][mig.iRundan];
   const rundaPilar = mig.mina.slice(mig.mina.length - mig.iRundan);
   app.innerHTML = `<div class="spelyta">
-    <div class="spelhuvud"><span>${esc(titel)}</span>${avbrytKnapp}</div>
+    <div class="spelhuvud"><span>${esc(titel)}</span>${huvudKnappar(s.leg.pilar.length)}</div>
     ${s.spelare.length > 1 ? `<div class="tavla">${s.spelare.map((id) => `<div class="spelarkort liten${id === tur ? ' tur' : ''}"><div class="namn">${N(s, id)}</div><div class="liten">${resultatText(per.get(id).summa)}</div></div>`).join('')}</div>` : ''}
     <div class="malvy">
       <div class="liten muted">Runda ${mig.runda + 1} av ${pl.length}${s.spelare.length > 1 ? ` · ${N(s, tur)}` : ''}</div>
@@ -371,7 +373,7 @@ function ovningVy(s) {
     <div class="pilrad">${pl[mig.runda].map((m, i) => `<span class="pil${rundaPilar[i] && traff(rundaPilar[i].mal, rundaPilar[i].segment) ? ' traff' : ''}">${rundaPilar[i] ? segText(rundaPilar[i].segment) : (m !== mal || i > mig.iRundan ? esc(malText(m)) : '')}</span>`).join('')}</div>
     <div class="knappar ${knappar(mal).length === 2 ? 'tva' : knappar(mal).length === 3 ? 'tre' : 'fyra'}">${knappar(mal).map((k) =>
       `<button class="btn stor${k.seg === 'M' ? ' miss' : ' traffknapp'}" data-seg="${k.seg}" type="button">${k.text}</button>`).join('')}</div>
-    <p class="rad"><button class="btn liten" id="angra" type="button"${s.leg.pilar.length ? '' : ' disabled'}>Ångra</button></p>
+    
   </div>`;
   kopplaAvbryt();
   app.querySelectorAll('[data-seg]').forEach((b) => b.onclick = () => {

@@ -34,6 +34,7 @@ Egen träningsapp för dart som ersätter My Dart Training, med synk mellan tele
 - Offline först: ett spel får sitt id (uuid) i appen, sparas lokalt efter varje kast och skickas med `dart.spara_spel` när leget/övningen är klar. Samma spel kan skickas flera gånger utan dubbletter.
 - Härledda värden (snitt, poäng, MPR) lagras aldrig – de räknas i vyerna (`v_x01`, `v_resultat`, `v_mal`).
 - Standard-Postgres, ingen logik som bara finns i Supabase.
-- Egna konton i en gemensam grupp (färre än 5 personer): alla ser allas spel och statistik, men ett spel ändras bara av den som skapade det eller spelade i det. Konton delas ut för hand – ingen egen registrering. Ingen anonym läsning.
+- Egna konton i en gemensam grupp (färre än 5 personer): man ser och ändrar bara spel man själv var med i eller har skapat. Spelarlistan är gemensam. Konton delas ut för hand – ingen egen registrering. Ingen anonym läsning.
 - Rent gränssnitt med fokus på poängen och stora knappar; det fiffiga runtomkring går att stänga av på Min sida (Sten 2026-11-22).
+- Under pågående spel fyller vyn skärmen och scrollar aldrig – storlekarna följer skärmens höjd, liggande skärm får två kolumner (`body.spelar` i `style.css`).
 - Svenska och SI-format: 24 h, ÅÅÅÅ-MM-DD, decimalkomma – oberoende av webbläsarens språk.
