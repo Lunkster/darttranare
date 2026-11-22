@@ -1,5 +1,11 @@
 [
  {
+  "datum": "2026-11-23",
+  "punkter": [
+   "**Statistiken visar bara registrerade spelare:** gäster syns inte längre i spelarvalet under Statistik, men deras spel finns kvar. (v0.7.2)"
+  ]
+ },
+ {
   "datum": "2026-11-22",
   "punkter": [
    "**Tävling och träning ihop:** dina tävlingar från klubben visas nu i X01-statistiken bredvid träningen – rosa punkter i grafen är tävlingskvällar, gröna är träningslegs. (v0.7.1)",

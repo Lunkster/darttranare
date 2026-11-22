@@ -1,17 +1,18 @@
 // Statistik per spelare: X01, cricket, övningarna och träff per dubbel. Allt räknas i vyerna.
-import { api, esc, fmt, proc, minns, jag } from './lib.js?v=0.7.1';
-import { linje, staplar } from './diagram.js?v=0.7.1';
-import { malText } from './spel.js?v=0.7.1';
-import { klubbInloggad, hamtaKlubb, klubbNycklar, klubbPunkter, klubbListor, kopplaKlubbListor, loggaInKlubb } from './klubb.js?v=0.7.1';
+import { api, esc, fmt, proc, minns, jag } from './lib.js?v=0.7.2';
+import { linje, staplar } from './diagram.js?v=0.7.2';
+import { malText } from './spel.js?v=0.7.2';
+import { klubbInloggad, hamtaKlubb, klubbNycklar, klubbPunkter, klubbListor, kopplaKlubbListor, loggaInKlubb } from './klubb.js?v=0.7.2';
 
 const summa = (rader, f) => rader.reduce((a, r) => a + Number(r[f] ?? 0), 0);
 const max = (rader, f) => (rader.length ? Math.max(...rader.map((r) => Number(r[f] ?? -Infinity))) : null);
 const nyckel = (v, t) => `<div class="nyckel"><div class="v">${v}</div><div class="t">${t}</div></div>`;
 
 export async function renderStatistik(el, alla) {
-  const aktiva = alla.filter((s) => s.aktiv);
+  // Bara registrerade spelare (med konto) – gäster finns kvar i databasen men visas inte här
+  const aktiva = alla.filter((s) => s.aktiv && s.anvandare);
   let vald = minns('statspelare') ?? jag(alla)?.id ?? aktiva[0]?.id;
-  if (!alla.some((s) => s.id === vald)) vald = aktiva[0]?.id;
+  if (!aktiva.some((s) => s.id === vald)) vald = jag(alla)?.id ?? aktiva[0]?.id;
   const [x01, ovr, mal] = await Promise.all([
     api(`v_x01?spelare_id=eq.${vald}&order=start`),
     api(`v_resultat?spelare_id=eq.${vald}&order=start`),
