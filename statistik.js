@@ -1,7 +1,7 @@
 // Statistik per spelare: X01, cricket, övningarna och träff per dubbel. Allt räknas i vyerna.
-import { api, esc, fmt, proc, minns, jag } from './lib.js?v=0.2.0';
-import { linje, staplar } from './diagram.js?v=0.2.0';
-import { malText } from './spel.js?v=0.2.0';
+import { api, esc, fmt, proc, minns, jag } from './lib.js?v=0.3.0';
+import { linje, staplar } from './diagram.js?v=0.3.0';
+import { malText } from './spel.js?v=0.3.0';
 
 const summa = (rader, f) => rader.reduce((a, r) => a + Number(r[f] ?? 0), 0);
 const max = (rader, f) => (rader.length ? Math.max(...rader.map((r) => Number(r[f] ?? -Infinity))) : null);

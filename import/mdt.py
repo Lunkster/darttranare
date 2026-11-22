@@ -16,7 +16,7 @@ Hoppas över: poängträning (xGame med startScore 0), Halve-it, cricket scoring
 Användning:
   python3 import/mdt.py BACKUP.mdt --visa                      # sammanfattning, skriver inget
   DART_KOD=... python3 import/mdt.py BACKUP.mdt                # skickar till Supabase via spara_spel
-  python3 import/mdt.py BACKUP.mdt --sql UT.sql --spelare ID.json   # SQL-fil (för körning som postgres)
+  python3 import/mdt.py BACKUP.mdt --sql UT.sql --spelare ID.json   # SQL-fil; ID.json = {mdt_namn: spelare.id}
 """
 import argparse, json, os, sqlite3, sys, urllib.request, uuid
 from datetime import datetime
@@ -193,11 +193,13 @@ def rest(metod, vag, data=None, token=None, profil=True):
 def skicka(spel_lista, namn):
     kod = os.environ.get('DART_KOD') or sys.exit('Sätt DART_KOD (lösenordet till Henriks konto, från lösenordshanteraren).')
     tok = rest('POST', '/auth/v1/token?grant_type=password', {'email': KONTO, 'password': kod}, profil=False)['access_token']
-    ids = {r['namn']: r['id'] for r in rest('GET', '/rest/v1/spelare?select=id,namn', token=tok)}
+    # Spelarna hittas på namnet i My Dart Training (mdt_namn), så att alias kan bytas fritt i appen
+    rader = rest('GET', '/rest/v1/spelare?select=id,namn,mdt_namn', token=tok)
+    ids = {r['namn']: r['id'] for r in rader if not r['mdt_namn']} | {r['mdt_namn']: r['id'] for r in rader if r['mdt_namn']}
     nya = [n for n in namn if n not in ids]
     if nya:
-        res = rest_prefer('POST', '/rest/v1/spelare', [{'namn': n, 'ordning': 1 if n == PROFIL else 10} for n in nya], tok)
-        ids.update({r['namn']: r['id'] for r in res})
+        res = rest_prefer('POST', '/rest/v1/spelare', [{'namn': n, 'mdt_namn': n, 'ordning': 10} for n in nya], tok)
+        ids.update({r['mdt_namn']: r['id'] for r in res})
     for x in med_id(spel_lista, ids):
         rest('POST', '/rest/v1/rpc/spara_spel', {'p': x}, token=tok)
     print(f'Skickade {len(spel_lista)} spel.')

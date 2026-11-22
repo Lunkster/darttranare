@@ -20,6 +20,7 @@ Egen träningsapp för dart som ersätter My Dart Training, med synk mellan tele
 | `spel.js` | Spellogik utan sidan: X01-regler, utgångar, spelplaner, poäng, cricket |
 | `spela.js` | Starta och spela – alla speltyper, pågående spel sparas lokalt |
 | `historik.js` | Alla spel, ta bort |
+| `jag.js` | Min sida: byta alias, välja vad som visas under spelet |
 | `statistik.js`, `diagram.js` | Statistik per spelare med egna SVG-diagram |
 | `lib.js` | Supabase-anrop (schema `dart`), inloggning, offlinekö, format |
 | `sw.js`, `manifest.webmanifest`, `ikon*` | Installerbar app, offline |
@@ -33,4 +34,5 @@ Egen träningsapp för dart som ersätter My Dart Training, med synk mellan tele
 - Härledda värden (snitt, poäng, MPR) lagras aldrig – de räknas i vyerna (`v_x01`, `v_resultat`, `v_mal`).
 - Standard-Postgres, ingen logik som bara finns i Supabase.
 - Egna konton i en gemensam grupp (färre än 5 personer): alla ser allas spel och statistik, men ett spel ändras bara av den som skapade det eller spelade i det. Konton delas ut för hand – ingen egen registrering. Ingen anonym läsning.
+- Rent gränssnitt med fokus på poängen och stora knappar; det fiffiga runtomkring går att stänga av på Min sida (Sten 2026-11-22).
 - Svenska och SI-format: 24 h, ÅÅÅÅ-MM-DD, decimalkomma – oberoende av webbläsarens språk.

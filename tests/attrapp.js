@@ -1,12 +1,12 @@
 // Attrapp för Supabase (PostgREST + auth) i minnet – testerna rör aldrig riktiga databasen.
 // Ersätter window.fetch innan appen laddas. Påhittade spelare. Vyerna räknas med samma regler som i SQL.
-import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.2.0';
+import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.3.0';
 
 export const KOD = 'kod123';
 export const EPOST = 'anna@exempel.se';
 const KONTON = { 'anna@exempel.se': { kod: KOD, sub: 'u-anna' }, 'bo@exempel.se': { kod: 'bo456', sub: 'u-bo' } };
 export const db = {
-  spelare: [{ id: 1, namn: 'Anna', aktiv: true, ordning: 1, anvandare: 'u-anna' }, { id: 2, namn: 'Bo', aktiv: true, ordning: 2, anvandare: 'u-bo' }],
+  spelare: [{ id: 1, namn: 'Anna', aktiv: true, ordning: 1, anvandare: 'u-anna', mdt_namn: null }, { id: 2, namn: 'Bo', aktiv: true, ordning: 2, anvandare: 'u-bo', mdt_namn: null }],
   // Ett spel som Bo spelat själv – Anna ser det men får inte ta bort det
   spel: [{ id: 'bo-spel-1', typ: 'scoring', installningar: { mal: '20', pilar: 3 }, start: '2026-11-01T18:00:00Z', slut: '2026-11-01T18:05:00Z', match_id: null, kalla: 'app', skapad_av: 'u-bo',
     spelare: [{ spelare_id: 2, ordning: 1, vinnare: false }], rundor: [], pilar: [{ spelare_id: 2, runda: 1, nr: 1, mal: '20', segment: 'T20' }, { spelare_id: 2, runda: 1, nr: 2, mal: '20', segment: 'M' }, { spelare_id: 2, runda: 1, nr: 3, mal: '20', segment: 'S20' }] }],
@@ -96,9 +96,16 @@ window.fetch = async (url, init = {}) => {
   db.logg.push(`${m} ${t}`);
   if (h['Content-Profile'] !== 'dart') return svar({ message: 'fel schema' }, 406);
   if (t === 'spelare' && m === 'POST') {
-    if (db.spelare.some((s) => s.namn === body.namn)) return svar({ code: '23505', message: 'duplicate key' }, 409);
+    if (db.spelare.some((s) => s.namn.toLowerCase() === body.namn.toLowerCase())) return svar({ code: '23505', message: 'duplicate key' }, 409);
     if (body.anvandare && body.anvandare !== db.inloggad) return svar({ message: 'row-level security' }, 403);
     const s = { id: db.nextId++, aktiv: true, anvandare: null, ...body }; db.spelare.push(s); return svar([s], 201);
+  }
+  if (t === 'spelare' && m === 'PATCH') {
+    const id = Number(q.get('id').slice(3)), rad = db.spelare.find((x) => x.id === id);
+    if (Object.keys(body).some((k) => !['namn', 'aktiv'].includes(k))) return svar({ code: '42501', message: 'permission denied' }, 403);
+    if (!rad || (rad.anvandare && rad.anvandare !== db.inloggad)) return svar(null, 204);   // RLS: inga rader ändras
+    if (body.namn && db.spelare.some((x) => x.id !== id && x.namn.toLowerCase() === body.namn.toLowerCase())) return svar({ code: '23505', message: 'duplicate key' }, 409);
+    Object.assign(rad, body); return svar(null, 204);
   }
   if (t === 'rpc/spara_spel') {
     const p = structuredClone(body.p);

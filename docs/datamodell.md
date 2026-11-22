@@ -9,10 +9,11 @@ erDiagram
   spel_spelare ||--o{ runda : "X01-besök"
   spel_spelare ||--o{ pil : "en rad per pil"
   spelare { smallint id PK
-    text namn UK
+    text namn UK "alias, unikt oavsett stora/små bokstäver"
     boolean aktiv
     smallint ordning
-    uuid anvandare UK "konto i auth.users – null = gäst" }
+    uuid anvandare UK "konto i auth.users – null = gäst"
+    text mdt_namn UK "namnet i My Dart Training (import)" }
   spel { uuid id PK "sätts i appen (offline)"
     text typ "x01 bobs27 dubbelrunda jdc scoring cricket"
     jsonb installningar "start, forst_till, leg, mal, pilar, mdt"
@@ -47,7 +48,8 @@ erDiagram
 Var och en har ett eget konto med rollen `dart` i `app_metadata`, kopplat till sin rad i `spelare` (`anvandare`). Spelare utan konto är gäster.
 - **Läsa:** alla i gruppen läser allt (policy `dart_las`).
 - **Spel:** ändras bara via `spara_spel`/`ta_bort_spel` (security definer). De släpper igenom nya spel, spel man själv skapat och spel där man själv är med (`far_andra`). Direkt skrivning i `spel`, `spel_spelare`, `runda` och `pil` är avstängd.
-- **Spelare:** alla får lägga till gäster; en spelare med konto ändras bara av ägaren; ingen kan koppla sig till någon annans konto. Ingen tar bort spelare.
+- **Spelare:** alla får lägga till gäster; en spelare med konto ändras bara av ägaren. Inloggade får bara ändra `namn` och `aktiv` (05_alias.sql) – ingen kan koppla om konton. Ingen tar bort spelare.
+- **Alias:** `namn` får inte krocka med någon annans, oavsett stora/små bokstäver (index `spelare_namn_unik`). Importen hittar spelarna på `mdt_namn`, så alias kan bytas fritt.
 
 ## Funktioner
 - `dart.spara_spel(p jsonb)` – sparar ett helt spel i en transaktion. Idempotent: samma id skriver över (offlinekön kan skicka flera gånger). Sätter `skapad_av` vid första sparandet.

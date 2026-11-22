@@ -45,21 +45,21 @@ main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: 12px; }
 .card.fel h2 { color: var(--fel); }
 .card.pagaende { border: 2px solid var(--guld); }
 
-.btn { font: inherit; font-weight: 600; color: var(--text); background: var(--kort-2); border: 1px solid var(--linje); border-radius: 10px;
-  padding: 10px 16px; min-height: 44px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+.btn { font: inherit; font-weight: 600; color: var(--text); background: var(--kort-2); border: 1px solid var(--linje); border-radius: 12px;
+  padding: 10px 16px; min-height: 50px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   touch-action: manipulation; -webkit-user-select: none; user-select: none; }
 .btn:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.35; cursor: default; }
 .btn.primar { background: var(--gron); border-color: var(--gron); color: #fff; }
 .btn.fara { background: transparent; border-color: var(--rod); color: var(--rod-2); }
-.btn.liten { min-height: 36px; padding: 6px 12px; font-size: 14px; }
+.btn.liten { min-height: 44px; padding: 6px 14px; font-size: 15px; }
 .btn.stor { min-height: 64px; font-size: 22px; }
 #starta { width: 100%; margin-top: 8px; }
 .rad { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .installera { margin: 0 8px; min-height: 32px; padding: 4px 10px; }
 
 .val { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
-.chip { font: inherit; font-size: 15px; color: var(--text-2); background: var(--kort-2); border: 1px solid var(--linje); border-radius: 999px; padding: 8px 14px; min-height: 40px; cursor: pointer; }
+.chip { font: inherit; font-size: 16px; color: var(--text-2); background: var(--kort-2); border: 1px solid var(--linje); border-radius: 999px; padding: 10px 16px; min-height: 48px; cursor: pointer; }
 .chip.vald { background: var(--gron); border-color: var(--gron); color: #fff; }
 .chip b { background: rgba(0,0,0,.25); border-radius: 999px; padding: 0 6px; }
 input { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--linje); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
@@ -75,21 +75,21 @@ input { font: inherit; color: var(--text); background: var(--bg); border: 1px so
 .spelarkort.tur { border-color: var(--gron-2); }
 .spelarkort.vann { border-color: var(--guld); }
 .spelarkort .namn { font-weight: 700; display: flex; justify-content: space-between; }
-.spelarkort .kvar { font-size: 44px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.spelarkort .kvar { font-size: 56px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .spelarkort.liten { padding: 8px 10px; }
 .legs { background: var(--guld); color: #000; border-radius: 999px; padding: 0 8px; font-size: 14px; }
 .forslag { color: var(--guld); font-weight: 700; margin-top: 2px; }
 .tur-text { margin: 0; text-align: center; color: var(--text-2); font-weight: 600; }
 .stallning { font-size: 18px; }
-.display { background: var(--kort); border-radius: var(--radie); text-align: center; font-size: 44px; font-weight: 800; padding: 6px; font-variant-numeric: tabular-nums; }
+.display { background: var(--kort); border-radius: var(--radie); text-align: center; font-size: 52px; font-weight: 800; padding: 6px; font-variant-numeric: tabular-nums; }
 .display.tom { color: var(--text-3); font-weight: 400; font-size: 28px; padding: 13px; }
 .knappar { display: grid; gap: 8px; }
 .knappar.knappsats { grid-template-columns: repeat(3, 1fr); }
-.knappar.knappsats .btn { min-height: 60px; font-size: 26px; }
+.knappar.knappsats .btn { min-height: 76px; font-size: 32px; }
 .knappar.tva { grid-template-columns: repeat(2, 1fr); }
 .knappar.tre { grid-template-columns: repeat(3, 1fr); }
 .knappar.fyra { grid-template-columns: repeat(2, 1fr); }
-.knappar .btn.stor { min-height: 84px; }
+.knappar .btn.stor { min-height: 96px; font-size: 26px; }
 .traffknapp { background: var(--gron); border-color: var(--gron); color: #fff; }
 .miss { background: var(--kort-2); color: var(--text-2); }
 .fraga { text-align: center; font-size: 20px; font-weight: 700; margin: 4px 0; }
@@ -108,7 +108,7 @@ table.cricket td { font-size: 19px; font-weight: 800; }
 table.cricket td.m3 { color: var(--gron-2); }
 table.cricket tr.poang td, table.cricket tr:last-child td { font-size: 16px; }
 .knappar.cricketknappar { grid-template-columns: repeat(3, 1fr); }
-.cricketknappar .btn { min-height: 44px; font-size: 18px; padding: 6px; }
+.cricketknappar .btn { min-height: 54px; font-size: 20px; padding: 6px; }
 .cricketknappar .btn.dubbel { background: #1f3a2a; }
 .cricketknappar .btn.trippel { background: #3a1f1f; }
 .cricketknappar .miss { grid-column: 1 / -1; min-height: 56px; }
@@ -145,3 +145,8 @@ table.cricket tr.poang td, table.cricket tr:last-child td { font-size: 16px; }
 .diagram .spar { fill: var(--kort-2); }
 .diagram .stapel { fill: var(--gron); }
 .gast { font-size: 11px; opacity: .7; }
+.vaxel { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--linje); cursor: pointer; }
+.vaxel input { width: 28px; height: 28px; margin: 2px 0 0; accent-color: var(--gron); flex: none; }
+.vaxel small { display: block; color: var(--text-3); font-size: 13px; }
+.msg.ok { color: var(--gron-2); }
+#inloggad a { color: var(--text-2); }

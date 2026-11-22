@@ -16,6 +16,10 @@ export function minns(nyckel, varde) {
   return varde;
 }
 
+// Val för vad som visas under spelet – det fiffiga runtomkring ska gå att stänga av (Sten 2026-11-22)
+export const STANDARD = { forslag: true, detaljer: false, dubbelfraga: true };
+export const val = (k) => ({ ...STANDARD, ...(minns('installningar') ?? {}) })[k];
+
 // ---------- läsa och skriva ----------
 export async function api(path) {
   const s = await session(true);

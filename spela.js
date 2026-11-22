@@ -1,10 +1,10 @@
 // Starta och spela: X01, cricket och övningar. Pågående spel sparas lokalt efter varje kast,
 // färdiga legs/övningar läggs i offlinekön och skickas med spara_spel.
-import { esc, fmt, proc, minns, uuid, write, laggIKo, skickaKo, tid, jag } from './lib.js?v=0.2.0';
+import { esc, fmt, proc, minns, uuid, write, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.3.0';
 import {
   TYPER, besok, fragaDubbel, utgang, kanGaUt, x01Snitt, plan, knappar, ovningSumma, ovningSlut,
   cricketLage, CRICKET, marksText, segText, malText, traff,
-} from './spel.js?v=0.2.0';
+} from './spel.js?v=0.3.0';
 
 let app = null;
 let inmatning = '';      // X01: siffror som skrivits in
@@ -177,12 +177,12 @@ function x01Vy(s) {
   const tur = ord[r.length % ord.length];
 
   const kort = ord.map((id) => {
-    const mina = r.filter((x) => x.spelare_id === id), k = kvar(id), forslag = kanGaUt(k) ? utgang(k) : null;
+    const mina = r.filter((x) => x.spelare_id === id), k = kvar(id), forslag = val('forslag') && kanGaUt(k) ? utgang(k) : null;
     const senaste = mina.at(-1);
     return `<div class="spelarkort${id === tur && !s.klar ? ' tur' : ''}${s.klar?.vinnare === id ? ' vann' : ''}">
       <div class="namn">${N(s, id)}${s.spelare.length > 1 && s.inst.forst_till > 1 ? ` <span class="legs">${s.vunna[id]}</span>` : ''}</div>
       <div class="kvar">${k}</div>
-      <div class="liten">snitt ${fmt(x01Snitt(mina), 1)} · ${mina.reduce((a, x) => a + x.pilar, 0)} pilar${senaste ? ` · senast ${senaste.poang}` : ''}</div>
+      ${val('detaljer') || s.klar ? `<div class="liten">snitt ${fmt(x01Snitt(mina), 1)} · ${mina.reduce((a, x) => a + x.pilar, 0)} pilar${senaste ? ` · senast ${senaste.poang}` : ''}</div>` : ''}
       ${forslag && !s.klar ? `<div class="forslag">${forslag.map(segText).join(' ')}</div>` : ''}
     </div>`;
   }).join('');
@@ -238,8 +238,9 @@ function x01Vy(s) {
     if (!inmatning) return;
     const poang = Number(inmatning), res = besok(k, poang);
     if (res.fel) { meddelande = res.fel; inmatning = ''; return rita(); }
-    if (fragaDubbel(k, res)) { fraga = { poang, res, kvar: k, steg: res.ut ? 'ut' : 'dubbel', pilar: 3 }; return rita(); }
-    registrera(poang, 3, 0, false);
+    if (fragaDubbel(k, res) && val('dubbelfraga')) { fraga = { poang, res, kvar: k, steg: res.ut ? 'ut' : 'dubbel', pilar: 3 }; return rita(); }
+    if (res.ut) { fraga = { poang, res, kvar: k, steg: 'ut', pilar: 3, utanDubbel: true }; return rita(); }   // pilarna räknas i snittet
+    registrera(res.bust ? 0 : poang, 3, 0, false);
   };
   const siffra = (v) => {
     if (v === 'ok') return ok();
@@ -248,7 +249,11 @@ function x01Vy(s) {
     rita();
   };
   app.querySelectorAll('[data-siffra]').forEach((b) => b.onclick = () => siffra(b.dataset.siffra));
-  app.querySelectorAll('[data-ut]').forEach((b) => b.onclick = () => { fraga.pilar = Number(b.dataset.ut); fraga.steg = 'dubbel'; rita(); });
+  app.querySelectorAll('[data-ut]').forEach((b) => b.onclick = () => {
+    fraga.pilar = Number(b.dataset.ut);
+    if (fraga.utanDubbel) return registrera(fraga.poang, fraga.pilar, 1, true);
+    fraga.steg = 'dubbel'; rita();
+  });
   app.querySelectorAll('[data-dubbel]').forEach((b) => b.onclick = () => {
     const d = Number(b.dataset.dubbel);
     registrera(fraga.res.bust ? 0 : fraga.poang, fraga.pilar, d, fraga.res.ut);

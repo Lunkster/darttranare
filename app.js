@@ -1,8 +1,9 @@
 // Router, inloggning, spelarlistan och offlinekön.
-import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.2.0';
-import { renderStart, renderSpel } from './spela.js?v=0.2.0';
-import { renderHistorik } from './historik.js?v=0.2.0';
-import { renderStatistik } from './statistik.js?v=0.2.0';
+import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.3.0';
+import { renderStart, renderSpel } from './spela.js?v=0.3.0';
+import { renderHistorik } from './historik.js?v=0.3.0';
+import { renderStatistik } from './statistik.js?v=0.3.0';
+import { renderJag } from './jag.js?v=0.3.0';
 
 const app = document.getElementById('app');
 
@@ -35,6 +36,7 @@ async function route() {
     if (vy === 'spel') return renderSpel(app);
     if (vy === 'historik') return await renderHistorik(app, await spelare());
     if (vy === 'statistik') return await renderStatistik(app, await spelare());
+    if (vy === 'jag') return renderJag(app, await spelare(), visaInloggad);
     return renderStart(app, await spelare());
   } catch (e) {
     if (e.status === 401) return renderLogin('Logga in igen.');
@@ -47,7 +49,7 @@ async function route() {
 
 function visaInloggad(alla) {
   const j = jag(alla);
-  document.getElementById('inloggad').textContent = j ? `${j.namn} · ` : '';
+  document.getElementById('inloggad').innerHTML = j ? `<a href="#/jag">${esc(j.namn)}</a> · ` : '<a href="#/jag">Min sida</a> · ';
 }
 
 function renderLogin(msg = '') {
