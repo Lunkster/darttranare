@@ -274,3 +274,8 @@ button.hemkort { width: 100%; text-align: left; font: inherit; border: 0; border
 .klubbtabell td:not(:first-child) { white-space: nowrap; }
 .klubbtabell a { color: var(--text); text-decoration: underline; text-decoration-color: #da4ca2; text-underline-offset: 3px; }
 #bdc { flex: 1; min-width: 0; }
+
+/* Löpande serie */
+.lopstallning { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin: 4px 0 12px; font-size: 18px; }
+.lopstallning span:first-child { text-align: right; } .lopstallning b { font-size: 34px; font-variant-numeric: tabular-nums; }
+.lopstallning .vann { font-weight: 700; color: var(--gron-2); }

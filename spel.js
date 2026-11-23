@@ -193,9 +193,28 @@ export function utslagSchema(spelare, nyId) {
   return ut;
 }
 
+// Spelschema för löpande serie: två spelare, antal matcher i tur och ordning, den som börjar växlar.
+export function lopandeSchema([a, b], antal, nyId) {
+  return Array.from({ length: antal }, (_, i) => ({ id: nyId(), runda: i + 1, nr: 1, spelare1: i % 2 ? b : a, spelare2: i % 2 ? a : b, fran1: null, fran2: null }));
+}
+
+// Set: gå igenom legsens vinnare i tidsordning. forstTill = legs per set, set = set för att vinna matchen.
+// Svar: {set: {id: vunna set}, legs: {id: legs i pågående set}, vinnare}
+export function setLage(vinnare, spelare, forstTill, set) {
+  const sv = Object.fromEntries(spelare.map((id) => [id, 0])), lv = { ...sv };
+  let vann = null;
+  for (const v of vinnare) {
+    if (vann !== null || !(v in lv)) continue;
+    lv[v]++;
+    if (lv[v] >= forstTill) { sv[v]++; spelare.forEach((id) => { lv[id] = 0; }); if (sv[v] >= set) vann = v; }
+  }
+  return { set: sv, legs: lv, vinnare: vann };
+}
+
 // Läget i varje match: vilka som spelar (utslag: vinnaren från tidigare match), legs, vinnare.
 // legs = [{turnering_match, spelare_id, legs, vunna, poang, pilar, marks, rundor}] (vyn v_turnering_leg)
-export function matchlagen(matcher, legs, forstTill) {
+// Med set (set > 1): legvinster = [{turnering_match, start, vinnare}] (vyn v_turnering_legvinst)
+export function matchlagen(matcher, legs, forstTill, set = 1, legvinster = []) {
   const perId = new Map(matcher.map((m) => [m.id, m]));
   const lage = new Map();
   const los = (id) => {
@@ -206,8 +225,14 @@ export function matchlagen(matcher, legs, forstTill) {
     const rad = (p) => legs.find((l) => l.turnering_match === id && l.spelare_id === p) ?? null;
     const l1 = rad(p1)?.vunna ?? 0, l2 = rad(p2)?.vunna ?? 0;
     const walkover = (p1 !== null && p2 === null && !m.fran2) ? p1 : (p2 !== null && p1 === null && !m.fran1) ? p2 : null;
-    const vinnare = walkover ?? (l1 >= forstTill ? p1 : l2 >= forstTill ? p2 : null);
-    const res = { ...m, p1, p2, legs1: l1, legs2: l2, rad1: rad(p1), rad2: rad(p2), vinnare, walkover: walkover !== null,
+    let vinnare = walkover ?? (l1 >= forstTill ? p1 : l2 >= forstTill ? p2 : null), sets = null;
+    if (set > 1 && walkover === null && p1 !== null && p2 !== null) {
+      const ordning = legvinster.filter((l) => l.turnering_match === id).sort((a, b) => (a.start < b.start ? -1 : 1)).map((l) => l.vinnare);
+      sets = setLage(ordning, [p1, p2], forstTill, set);
+      vinnare = sets.vinnare;
+    }
+    const res = { ...m, p1, p2, legs1: l1, legs2: l2, set1: sets?.set[p1] ?? null, set2: sets?.set[p2] ?? null,
+      aktuella: sets ? sets.legs : { [p1]: l1, [p2]: l2 }, rad1: rad(p1), rad2: rad(p2), vinnare, walkover: walkover !== null,
       klar: vinnare !== null, spelbar: vinnare === null && p1 !== null && p2 !== null, pagar: vinnare === null && (l1 + l2) > 0 };
     lage.set(id, res);
     return res;

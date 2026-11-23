@@ -1,7 +1,7 @@
 // Hela flödet mot attrappen: inloggning, X01 med bust och utgång, ogiltig poäng, Bob's 27, solocricket med ångra,
 // offline-kö, historik med ta bort och statistik. Kör: tests/attrapp.html?flode – slutar med "fel: 0".
-import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.7.3';
-import { ko, minns } from '../lib.js?v=0.7.3';
+import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.8.0';
+import { ko, minns } from '../lib.js?v=0.8.0';
 
 const ut = document.getElementById('testut');
 let fel = 0;
@@ -111,7 +111,7 @@ try {
   kolla('historik visar snitt', text('#app').includes('snitt'));
   await klick(`[data-tabort="${b.id}"]`); await vanta(300);
   kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 3);
-  const { rpc } = await import('../lib.js?v=0.7.3');
+  const { rpc } = await import('../lib.js?v=0.8.0');
   let nekad = false; try { await rpc('ta_bort_spel', { sid: 'bo-spel-1' }); } catch { nekad = true; }
   kolla('servern nekar att ta bort Bos spel', nekad && db.spel.some((s) => s.id === 'bo-spel-1'));
   kolla('Annas spel är skapade av Anna', db.spel.filter((s) => s.id !== 'bo-spel-1').every((s) => s.skapad_av === 'u-anna'));
@@ -154,6 +154,28 @@ try {
   await ga('#/');
   kolla('startsidan visar turneringen', text('#turneringar').includes('Testcupen') && text('#turneringar').includes('Din nästa match'), text('#turneringar'));
   kolla('startsidan visar formen', text('#form').includes('X01-snitt'), text('#form'));
+
+  // Löpande serie: Anna mot Bo, 10 matcher, 301, först till 2 set à 1 leg
+  await ga('#/turnering/ny');
+  $('#tnamn').value = 'Annas och Bos serie';
+  for (const x of ['[data-falt="format"] [data-v="lopande"]', '[data-falt="antal"] [data-v="10"]', '[data-falt="typ"] [data-v="x01"]', '[data-falt="start"] [data-v="301"]', '[data-falt="set"] [data-v="2"]', '[data-falt="forst_till"] [data-v="1"]']) await klick(x);
+  for (const b of [...document.querySelectorAll('#deltagarval .vald')]) await klick(b);
+  for (const namn of ['Anna', 'Bo']) await klick([...document.querySelectorAll('#deltagarval button')].find((b) => b.textContent.trim().endsWith(namn)));
+  $('#nyform').requestSubmit(); await vanta(500);
+  const lopT = db.turnering.find((x) => x.format === 'lopande'), lopM = db.turnering_match.filter((m) => m.turnering_id === lopT?.id).sort((a, b) => a.runda - b.runda);
+  kolla('löpande serie skapad', text('h1') === 'Annas och Bos serie' && lopM.length === 10 && lopT.installningar.set === 2 && lopM[1].spelare1 === 2 && document.querySelectorAll('[data-spela]').length === 1, `${lopM.length} ${JSON.stringify(lopT?.installningar)}`);
+  for (let set = 1; set <= 2; set++) {
+    if (set === 1) { await klick('[data-spela]'); await klick(knapp('På den här skärmen')); await vanta(300); }
+    else await klick(knapp('Nästa set'));
+    if (set === 1) kolla('set i spelhuvudet', text('.spelhuvud').includes('Set 0–0'), text('.spelhuvud'));
+    const kast = [180, 121];
+    for (let i = 0; i < 6 && kast.length; i++) await poang(text('.tur-text').startsWith('Anna') ? kast.shift() : 0);
+    await klick('[data-ut="3"]'); await klick('[data-dubbel="1"]'); await vanta(400);
+    if (set === 1) kolla('Anna vann setet', text('h1') === 'Anna vann setet!' && !!knapp('Nästa set'), text('h1'));
+  }
+  kolla('Anna vann matchen 2–0 i set', text('h1') === 'Anna vann matchen!' && text('.stallning').includes('2'), text('h1') + ' ' + text('.stallning'));
+  await klick(knapp('Till Annas och Bos serie')); await vanta(500);
+  kolla('löpande: ställning 1–0 och nästa match', text('.lopstallning b') === '1–0' && text('#app').includes('Match 2 av 10') && text('#app').includes('1 av 10 matcher') && [...document.querySelectorAll('.matchrad.klar .res')].some((r) => r.textContent === '2–0'), text('.lopstallning') + ' | ' + text('#app').slice(0, 200));
 
   // Spel på distans: Anna och Bo på var sin telefon. Bo:s telefon spelas genom att ändra attrappens live_match.
   await ga('#/turnering/ny');

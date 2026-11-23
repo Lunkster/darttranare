@@ -33,7 +33,7 @@ erDiagram
     uuid turnering_match "leg i en turneringsmatch" }
   turnering { uuid id PK
     text namn
-    text format "serie eller utslag"
+    text format "serie, utslag eller lopande"
     text typ "x01 eller cricket"
     jsonb installningar "start, forst_till, dubbelmote"
     timestamptz skapad
@@ -79,6 +79,7 @@ erDiagram
 Var och en har ett eget konto med rollen `dart` i `app_metadata`, kopplat till sin rad i `spelare` (`anvandare`). Spelare utan konto är gäster.
 - **Läsa spel:** bara spel man själv var med i eller har skapat (`ser_spel`, 06_synlighet.sql), och legs i turneringar man är med i (07).
 - **Turneringar (07_turneringar.sql):** deltagare med konto (och admin) ser turneringen, schemat och alla dess matcher (`i_turnering`). Bara admin – `app_metadata.dart_admin` – skapar och tar bort (`skapa_turnering`, `ta_bort_turnering`). Matchresultat och tabell räknas i `spel.js` (`matchlagen`, `turneringstabell`) ur vyn `v_turnering_leg` – inget lagras.
+- **Löpande serie och set (10_lopande.sql):** format `lopande` = två spelare möts i 10, 20 eller 30 matcher i tur och ordning (den som börjar växlar). `installningar.set` = set för att vinna matchen (saknas = inga set), `forst_till` = legs per set. Setställningen räknas i `spel.js` (`setLage`) ur vyn `v_turnering_legvinst` (legsens vinnare i tidsordning) – inget lagras. En löpande serie får skapas av vem som helst med konto som själv är en av de två; den som skapat en turnering får också ta bort den.
 - **Spel på distans (08_distans.sql):** två spelare med konto i samma turneringsmatch, var och en på sin telefon. Läget för det pågående leget ligger tillfälligt i `live_match`; deltagarna i turneringen kan läsa det. Bara matchens två spelare (och admin) skriver, via `live_skicka(tm, ver, lage)`: `ver = 0` startar (nekas om matchen redan är startad), annars måste `ver` vara den senaste versionen – annars svarar funktionen null och appen hämtar motspelarens läge. `live_avsluta(tm)` tar bort raden när matchen är slut eller avbryts. Färdiga legs sparas som vanligt med `spara_spel`.
 - **Klubbappen (09_klubb.sql):** `spelare.bdc_id` är ens spelare i Bankeryds dartklubbs app (Supabase-projektet `bdc-statistik`). Var och en sätter sin egen på Min sida. Inget av klubbens data kopieras hit: `klubb.js` läser vyerna `v_turnering_statistik`, `v_ds_spelare` och tabellerna `turnering`, `spelare` direkt i klubbprojektet med klubbappens inloggning (`bdc-session` i localStorage – samma webbadress).
 - **Läsa spelare:** alla i gruppen ser spelarlistan (behövs för att välja motståndare).
@@ -101,6 +102,7 @@ Var och en har ett eget konto med rollen `dart` i `app_metadata`, kopplat till s
 | `v_x01` | Per X01-leg och spelare: poäng, pilar, snitt, första 9, dubbelpilar, checkouts, högsta utgång, 100+/140+/180, kvar |
 | `v_resultat` | Övningar och cricket per spel och spelare: pilar, träffar, marks, rundor, poäng (Bob's 27, JDC, scoring), MPR |
 | `v_mal` | Träff per mål och spelare (dubblar, bull m.m.) |
+| `v_turnering_legvinst` | Vem som vann varje färdigt leg i en turneringsmatch, med starttid – för setställningen |
 | `v_turnering_leg` | Per turneringsmatch och spelare: legs, vunna legs, poäng och pilar (X01), marks och rundor (cricket) |
 
 ## Import från My Dart Training

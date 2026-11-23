@@ -1,7 +1,7 @@
 // Klubbappen för Bankeryds dartklubb (bdc-statistik): tävlingar på n01darts.com och distriktsserien.
 // Inget kopieras hit – Darttränaren läser direkt med klubbappens inloggning, som ligger på samma
 // webbadress (lunkster.github.io) under nyckeln bdc-session. Är man inte inloggad där visas en länk dit.
-import { esc, fmt } from './lib.js?v=0.7.3';
+import { esc, fmt } from './lib.js?v=0.8.0';
 
 export const KLUBB_APP = 'https://lunkster.github.io/bdc-statistik/';
 const URL_ = 'https://xkfjbrkrtetkbjugresq.supabase.co';

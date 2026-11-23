@@ -5,19 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0f1512">
   <title>Darttränaren</title>
-  <link rel="icon" href="ikon.svg?v=0.7.3" type="image/svg+xml">
+  <link rel="icon" href="ikon.svg?v=0.8.0" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Dart">
-  <link rel="stylesheet" href="style.css?v=0.7.3">
+  <link rel="stylesheet" href="style.css?v=0.8.0">
 </head>
 <body>
   <header class="topbar">
     <a href="#/" class="brand" aria-label="Till start">
-      <img src="ikon.svg?v=0.7.3" alt="" class="logo" aria-hidden="true"><span>Dart</span>
+      <img src="ikon.svg?v=0.8.0" alt="" class="logo" aria-hidden="true"><span>Dart</span>
     </a>
     <nav class="tabs" aria-label="Huvudmeny">
       <a href="#/" data-route="hem">Hem</a>
@@ -36,10 +36,10 @@
   <footer class="foot">
     <span id="kostatus"></span>
     <button type="button" class="btn installera" id="installera" hidden>Installera som app</button>
-    <span id="inloggad"></span><span id="version">v0.7.3</span> · <a href="#/loggaut" id="loggaut" hidden>Logga ut</a>
+    <span id="inloggad"></span><span id="version">v0.8.0</span> · <a href="#/loggaut" id="loggaut" hidden>Logga ut</a>
   </footer>
 
-  <script type="module" src="app.js?v=0.7.3"></script>
+  <script type="module" src="app.js?v=0.8.0"></script>
   <script>
     if ('serviceWorker' in navigator && !location.pathname.includes('/tests/')) navigator.serviceWorker.register('sw.js').catch(() => {});
     // Knapp för att installera appen (Chrome, Edge, Android). Visas bara när webbläsaren erbjuder installation.

@@ -1,10 +1,10 @@
 // Starta och spela: X01, cricket och övningar. Pågående spel sparas lokalt efter varje kast,
 // färdiga legs/övningar läggs i offlinekön och skickas med spara_spel.
-import { esc, fmt, proc, minns, uuid, write, rpc, api, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.7.3';
+import { esc, fmt, proc, minns, uuid, write, rpc, api, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.8.0';
 import {
   TYPER, besok, fragaDubbel, utgang, kanGaUt, x01Snitt, plan, knappar, ovningSumma, ovningSlut,
   cricketLage, CRICKET, marksText, segText, malText, traff,
-} from './spel.js?v=0.7.3';
+} from './spel.js?v=0.8.0';
 
 let app = null;
 let inmatning = '';      // X01: siffror som skrivits in
@@ -108,12 +108,14 @@ export function renderStart(el, alla, typFranLank) {
 
 function nyttSpel(typ, inst, spelare, namn, turnering = null) {
   inmatning = ''; fraga = null;
-  // turnering = {match, id, namn, vunna:{spelare_id: legs}} – legsen i matchen får match_id = turneringsmatchens id
+  // turnering = {match, id, namn, vunna:{spelare_id: legs i pågående set}, set:{spelare_id: vunna set}, spelade: legs hittills}
+  // legsen i matchen får match_id = turneringsmatchens id
   const vunna = Object.fromEntries(spelare.map((id) => [id, turnering?.vunna?.[id] ?? 0]));
+  const setVunna = (inst.set ?? 1) > 1 ? Object.fromEntries(spelare.map((id) => [id, turnering?.set?.[id] ?? 0])) : null;
   pagaende({
     typ, inst, spelare: [...spelare], namn, turnering,
     match_id: turnering ? turnering.match : (spelare.length > 1 || inst.forst_till > 1 ? uuid() : null),
-    vunna, legNr: Object.values(vunna).reduce((a, v) => a + v, 0) + 1,
+    vunna, setVunna, legNr: (turnering?.spelade ?? Object.values(vunna).reduce((a, v) => a + v, 0)) + 1,
     leg: { id: uuid(), start: nu(), rundor: [], pilar: [] }, klar: null,
   });
 }
@@ -212,7 +214,11 @@ export function renderSpel(el) {
 const rita = () => renderSpel(app);
 const ordning = (s) => { const k = (s.legNr - 1) % s.spelare.length; return [...s.spelare.slice(k), ...s.spelare.slice(0, k)]; };
 const N = (s, id) => esc(s.namn[id] ?? '?');
-const legInfo = (s) => [s.turnering ? esc(s.turnering.namn) : '', s.inst.forst_till > 1 ? `Leg ${s.legNr} · först till ${s.inst.forst_till}` : '',
+// Flera legs eller set i matchen – då visas ställningen
+const flerLeg = (s) => s.spelare.length > 1 && (s.inst.forst_till > 1 || (s.inst.set ?? 1) > 1);
+const legText = (s) => (s.setVunna ? `Set ${ordning(s).map((id) => s.setVunna[id]).join('–')} · leg ${Object.values(s.vunna).reduce((a, v) => a + v, 0) + (s.klar ? 0 : 1)}`
+  : s.inst.forst_till > 1 ? `Leg ${s.legNr} · först till ${s.inst.forst_till}` : '');
+const legInfo = (s) => [s.turnering ? esc(s.turnering.namn) + (s.turnering.omgang ? ` ${s.turnering.omgang}` : '') : '', legText(s),
   s.distans ? '<span class="distans">på distans</span>' : ''].filter(Boolean).join(' · ');
 const avbrytKnapp = `<button class="btn liten" id="avbryt" type="button">Avbryt</button>`;
 const huvudKnappar = (kanAngra) => `<span class="huvudknappar"><button class="btn liten" id="angra" type="button"${kanAngra ? '' : ' disabled'}>Ångra</button>${avbrytKnapp}</span>`;
@@ -239,12 +245,15 @@ function sparaLeg(s, spelarRader) {
 }
 
 function legSlut(s, vinnare) {
+  const fore = { vunna: { ...s.vunna }, setVunna: s.setVunna ? { ...s.setVunna } : null };
   s.vunna[vinnare]++;
-  const matchKlar = s.vunna[vinnare] >= (s.inst.forst_till ?? 1);
-  s.klar = { vinnare, match: matchKlar };
+  let matchKlar = s.vunna[vinnare] >= (s.inst.forst_till ?? 1), setKlar = false;
+  if (matchKlar && s.setVunna) { s.setVunna[vinnare]++; setKlar = true; matchKlar = s.setVunna[vinnare] >= s.inst.set; }
+  s.klar = { vinnare, match: matchKlar, set: setKlar, fore };
   sparaLeg(s, ordning(s).map((id, i) => ({ spelare_id: id, ordning: i + 1, vinnare: id === vinnare, resultat: null })));
 }
 function nastaLeg(s) {
+  if (s.klar?.set) s.spelare.forEach((id) => { s.vunna[id] = 0; });   // nytt set
   s.legNr++; s.klar = null; s.leg = { id: uuid(), start: nu(), rundor: [], pilar: [] };
 }
 function igen(s) { nyttSpel(s.typ, s.inst, s.spelare, s.namn); }
@@ -255,7 +264,7 @@ function slutKnappar(s, angraText, kanAngra = true) {
     <a class="btn primar" href="#/turnering/${s.turnering.id}" id="tillstart">Till ${esc(s.turnering.namn)}</a>
     <button class="btn" id="angra" type="button"${kanAngra ? '' : ' disabled'}>${angraText}</button></p>`;
   return `<p class="rad">
-    ${match ? '<button class="btn primar" id="igen" type="button">Spela igen</button>' : '<button class="btn primar" id="nasta" type="button">Nästa leg</button>'}
+    ${match ? '<button class="btn primar" id="igen" type="button">Spela igen</button>' : `<button class="btn primar" id="nasta" type="button">${s.klar.set ? 'Nästa set' : 'Nästa leg'}</button>`}
     <button class="btn" id="angra" type="button"${kanAngra ? '' : ' disabled'}>${angraText}</button>
     ${match ? '<a class="btn" href="#/" id="tillstart">Till start</a>' : ''}</p>`;
 }
@@ -264,12 +273,14 @@ function kopplaSlut(s, angra) {
   app.querySelector('#igen')?.addEventListener('click', () => { igen(s); rita(); });
   app.querySelector('#tillstart')?.addEventListener('click', () => { avslutaDistans(s); pagaende(null); });
   app.querySelector('#angra')?.addEventListener('click', () => {
-    if (s.klar.vinnare !== undefined && s.klar.vinnare !== null) s.vunna[s.klar.vinnare]--;
+    if (s.klar.fore) { s.vunna = s.klar.fore.vunna; s.setVunna = s.klar.fore.setVunna; }
+    else if (s.klar.vinnare !== undefined && s.klar.vinnare !== null) s.vunna[s.klar.vinnare]--;
     s.klar = null; angra(s); pagaende(s); rita();
   });
 }
-const stallning = (s) => (s.spelare.length > 1 && s.inst.forst_till > 1
-  ? `<p class="stallning">${ordning(s).map((id) => `${N(s, id)} <b>${s.vunna[id]}</b>`).join(' – ')}</p>` : '');
+const stallning = (s) => (flerLeg(s)
+  ? `<p class="stallning">${ordning(s).map((id) => `${N(s, id)} <b>${s.setVunna ? s.setVunna[id] : s.vunna[id]}</b>`).join(' – ')}${s.setVunna ? ' <small>set</small>' : ''}</p>` : '');
+const vannText = (s) => (s.klar.match && flerLeg(s) ? 'matchen' : s.klar.set ? 'setet' : 'leget');
 
 // ------------------------------------------------------------ X01
 function x01Vy(s) {
@@ -281,7 +292,7 @@ function x01Vy(s) {
     const mina = r.filter((x) => x.spelare_id === id), k = kvar(id), forslag = val('forslag') && kanGaUt(k) ? utgang(k) : null;
     const senaste = mina.at(-1);
     return `<div class="spelarkort${id === tur && !s.klar ? ' tur' : ''}${s.klar?.vinnare === id ? ' vann' : ''}">
-      <div class="namn">${N(s, id)}${s.spelare.length > 1 && s.inst.forst_till > 1 ? ` <span class="legs">${s.vunna[id]}</span>` : ''}</div>
+      <div class="namn">${N(s, id)}${flerLeg(s) ? ` <span class="legs">${s.vunna[id]}</span>` : ''}</div>
       <div class="kvar">${k}</div>
       ${val('detaljer') || s.klar ? `<div class="liten">snitt ${fmt(x01Snitt(mina), 1)} · ${mina.reduce((a, x) => a + x.pilar, 0)} pilar${senaste ? ` · senast ${senaste.poang}` : ''}</div>` : ''}
       ${forslag && !s.klar ? `<div class="forslag">${forslag.map(segText).join(' ')}</div>` : ''}
@@ -293,7 +304,7 @@ function x01Vy(s) {
     const rad = (id) => { const m = r.filter((x) => x.spelare_id === id), d = m.reduce((a, x) => a + x.pilar_dubbel, 0);
       return `<tr><td>${N(s, id)}</td><td>${fmt(x01Snitt(m), 1)}</td><td>${fmt(x01Snitt(m.filter((x) => x.nr <= 3)), 1)}</td><td>${m.reduce((a, x) => a + x.pilar, 0)}</td><td>${d ? proc(m.filter((x) => x.checkout).length, d) : '–'}</td></tr>`; };
     app.innerHTML = `<div class="card">
-      <h1>${N(s, s.klar.vinnare)} vann ${s.klar.match && s.inst.forst_till > 1 ? 'matchen' : 'leget'}!</h1>
+      <h1>${N(s, s.klar.vinnare)} vann ${vannText(s)}!</h1>
       ${stallning(s)}
       <div class="tavla">${kort}</div>
       <table class="tabell"><tr><th></th><th>Snitt</th><th>Första 9</th><th>Pilar</th><th>Dubbel</th></tr>${ord.map(rad).join('')}</table>
@@ -384,13 +395,13 @@ function cricketVy(s) {
   const rundaPilar = p.slice(p.length - iRundan);
   const mpr = (id) => { const mina = p.filter((x) => x.spelare_id === id); return mina.length ? lage.get(id).allaMarks / Math.ceil(mina.length / 3) : null; };
 
-  const tabell = `<table class="cricket"><tr><th></th>${ord.map((id) => `<th class="${id === tur && !s.klar ? 'tur' : ''}">${N(s, id)}${s.inst.forst_till > 1 && ord.length > 1 ? ` <span class="legs">${s.vunna[id]}</span>` : ''}</th>`).join('')}</tr>
+  const tabell = `<table class="cricket"><tr><th></th>${ord.map((id) => `<th class="${id === tur && !s.klar ? 'tur' : ''}">${N(s, id)}${flerLeg(s) ? ` <span class="legs">${s.vunna[id]}</span>` : ''}</th>`).join('')}</tr>
     ${CRICKET.map((n) => `<tr><th>${n === 25 ? 'Bull' : n}</th>${ord.map((id) => `<td class="m${Math.min(3, lage.get(id).marks[n])}">${marksText(lage.get(id).marks[n])}</td>`).join('')}</tr>`).join('')}
     ${ord.length > 1 ? `<tr class="poang"><th>Poäng</th>${ord.map((id) => `<td>${lage.get(id).poang}</td>`).join('')}</tr>` : ''}
     <tr><th>MPR</th>${ord.map((id) => `<td>${fmt(mpr(id), 2)}</td>`).join('')}</tr></table>`;
 
   if (s.klar) {
-    app.innerHTML = `<div class="card"><h1>${ord.length > 1 ? `${N(s, s.klar.vinnare)} vann ${s.klar.match && s.inst.forst_till > 1 ? 'matchen' : 'leget'}!` : 'Alla stängda!'}</h1>
+    app.innerHTML = `<div class="card"><h1>${ord.length > 1 ? `${N(s, s.klar.vinnare)} vann ${vannText(s)}!` : 'Alla stängda!'}</h1>
       ${stallning(s)}${tabell}${slutKnappar(s, 'Ångra sista pilen', egetSenast(s, p))}</div>`;
     return kopplaSlut(s, (x) => x.leg.pilar.pop());
   }

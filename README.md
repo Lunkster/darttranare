@@ -13,6 +13,7 @@ Egen träningsapp för dart som ersätter My Dart Training, med synk mellan tele
 - **Pilar mot ett mål** – 30–100 pilar mot valfritt mål, singel/dubbel/trippel/miss per pil
 - **Turneringar** (v0.5) – serie eller utslag i X01 eller cricket, tabell, matcher i valfri ordning och samtidigt
 - **Tävlingar från klubben** (v0.7) – i X01-statistiken syns ens tävlingar från klubbappen för Bankeryds dartklubb bredvid träningen: egna nyckeltal, rosa punkter i grafen (snitt per tävlingskväll), tävlingslista med länk till varje tävling och distriktsserien. Läses direkt i klubbappen med dess inloggning – inget kopieras
+- **Löpande serie** (v0.8) – två spelare möts i 10, 20 eller 30 matcher i tur och ordning, med valfri spelform, legs och set
 - **Spel på distans** (v0.6) – två spelare i en turneringsmatch på var sin telefon; var och en skriver in sina kast och båda ser ställningen (avstämning var 1,5 s mot `live_match`)
 
 ## Struktur
@@ -24,7 +25,7 @@ Egen träningsapp för dart som ersätter My Dart Training, med synk mellan tele
 | `spela.js` | Starta och spela – alla speltyper, pågående spel sparas lokalt |
 | `historik.js` | Alla spel, ta bort |
 | `hem.js` | Startsidan: fortsätt spel, nästa turneringsmatch, snabbstart, form, senaste spel |
-| `turnering.js` | Turneringar: lista, skapa (admin), tabell, lottning, starta matcher |
+| `turnering.js` | Turneringar: lista, skapa (admin; löpande serie alla), tabell, lottning, ställning, starta matcher |
 | `klubb.js` | Tävlingar från klubbappen (bdc-statistik): läser med klubbappens inloggning, kort i statistiken, länkar |
 | `jag.js` | Min sida: byta alias, välja vad som visas under spelet |
 | `nyheter.js`, `nyheter.json` | Nytt i appen (i-knappen) – `nyheter.json` görs från Obsidian-anteckningen *Darttränaren - Nyheter* |

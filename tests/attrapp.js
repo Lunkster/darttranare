@@ -1,6 +1,6 @@
 // Attrapp för Supabase (PostgREST + auth) i minnet – testerna rör aldrig riktiga databasen.
 // Ersätter window.fetch innan appen laddas. Påhittade spelare. Vyerna räknas med samma regler som i SQL.
-import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.7.3';
+import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.8.0';
 
 export const KOD = 'kod123';
 export const EPOST = 'anna@exempel.se';
@@ -74,6 +74,10 @@ const v = {
     }));
     return [...ut.values()];
   },
+  turneringLegvinst() {
+    return synliga().filter((s) => s.turnering_match && s.slut).flatMap((s) => s.spelare.filter((sp) => sp.vinnare)
+      .map((sp) => ({ turnering_match: s.turnering_match, spel_id: s.id, start: s.start, vinnare: sp.spelare_id })));
+  },
   mal() {
     const m = new Map();
     synliga().forEach((s) => s.pilar.filter((p) => p.mal).forEach((p) => {
@@ -123,7 +127,7 @@ window.fetch = async (url, init = {}) => {
   if (h['Accept-Profile'] !== 'dart') return svar({ message: 'fel schema' }, 406);
   const t = u.pathname.replace('/rest/v1/', ''), q = u.searchParams;
   if (m === 'GET') {
-    const kalla = { v_x01: v.x01, v_resultat: v.resultat, v_mal: v.mal, v_turnering_leg: v.turneringLeg,
+    const kalla = { v_x01: v.x01, v_resultat: v.resultat, v_mal: v.mal, v_turnering_leg: v.turneringLeg, v_turnering_legvinst: v.turneringLegvinst,
       turnering: synligaTurneringar, turnering_deltagare: () => db.turnering_deltagare.filter((d) => iTurnering(d.turnering_id)),
       turnering_match: () => db.turnering_match.filter((m) => iTurnering(m.turnering_id)),
       live_match: () => structuredClone(db.live_match.filter((l) => iTurnering(db.turnering_match.find((m) => m.id === l.turnering_match)?.turnering_id))) }[t]?.() ?? db[t];
@@ -150,8 +154,9 @@ window.fetch = async (url, init = {}) => {
     db.spel = db.spel.filter((s) => s.id !== p.id); db.spel.push(p); return svar(null, 200);
   }
   if (t === 'rpc/skapa_turnering') {
-    if (!Object.values(KONTON).find((x) => x.sub === db.inloggad)?.admin) return svar({ message: 'Bara admin kan skapa turneringar' }, 400);
     const p = body.p, tid = `t-${db.turnering.length + 1}`;
+    const egenLopande = p.format === 'lopande' && p.deltagare.length === 2 && p.deltagare.some((d) => d.spelare_id === jagId());
+    if (!Object.values(KONTON).find((x) => x.sub === db.inloggad)?.admin && !egenLopande) return svar({ message: 'Bara admin kan skapa turneringar' }, 400);
     db.turnering.push({ id: tid, namn: p.namn, format: p.format, typ: p.typ, installningar: p.installningar, skapad: new Date().toISOString(), skapad_av: db.inloggad, avslutad: null });
     p.deltagare.forEach((d) => db.turnering_deltagare.push({ turnering_id: tid, ...d }));
     p.matcher.forEach((m) => db.turnering_match.push({ turnering_id: tid, spelare1: null, spelare2: null, fran1: null, fran2: null, ...m }));
