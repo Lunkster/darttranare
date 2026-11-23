@@ -1,7 +1,7 @@
 // Hela flödet mot attrappen: inloggning, X01 med bust och utgång, ogiltig poäng, Bob's 27, solocricket med ångra,
 // offline-kö, historik med ta bort och statistik. Kör: tests/attrapp.html?flode – slutar med "fel: 0".
-import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.9.0';
-import { ko, minns } from '../lib.js?v=0.9.0';
+import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.9.1';
+import { ko, minns } from '../lib.js?v=0.9.1';
 
 const ut = document.getElementById('testut');
 let fel = 0;
@@ -95,6 +95,14 @@ try {
   kolla('alla stängda', text('h1').includes('Alla stängda') && c?.pilar.length === 9, `${c?.pilar.length} pilar`);
   kolla('cricket-pilar har runda och nr', c.pilar[3].runda === 2 && c.pilar[3].nr === 1);
 
+  // Pilar mot ett mål: singlar, dubblar och tripplar summeras
+  await klick(knapp('Till start')); await ga('#/ny'); await klick('[data-typ="scoring"]');
+  await klick('[data-inst="mal"] [data-v="20"]'); await klick('[data-inst="pilar"] [data-v="30"]'); await klick('#starta');
+  for (const seg of ['T20', 'D20', 'S20', 'S20']) await klick(`[data-seg="${seg}"]`);
+  kolla('mål: S/D/T under spelet', text('.malvy .sdt') === 'S 2 · D 1 · T 1', text('.malvy .sdt'));
+  for (let i = 0; i < 26; i++) await klick('[data-seg="M"]');
+  kolla('mål: S/D/T på slutskärmen', text('.resultat .sdt') === '2 singlar · 1 dubblar · 1 tripplar', text('.resultat .sdt'));
+
   // Offline: spel hamnar i kön och skickas när nätet kommer tillbaka
   await klick(knapp('Till start')); await ga('#/ny'); await klick('[data-typ="dubbelrunda"]'); await klick('#starta');
   db.offline = true;
@@ -107,11 +115,11 @@ try {
 
   // Historik och ta bort
   await ga('#/historik');
-  kolla('historiken listar Annas 4 spel – inte Bos', document.querySelectorAll('details.hrad').length === 4 && !$('[data-tabort="bo-spel-1"]'), String(document.querySelectorAll('details.hrad').length));
+  kolla('historiken listar Annas 5 spel – inte Bos', document.querySelectorAll('details.hrad').length === 5 && !$('[data-tabort="bo-spel-1"]'), String(document.querySelectorAll('details.hrad').length));
   kolla('historik visar snitt', text('#app').includes('snitt'));
   await klick(`[data-tabort="${b.id}"]`); await vanta(300);
-  kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 3);
-  const { rpc } = await import('../lib.js?v=0.9.0');
+  kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 4);
+  const { rpc } = await import('../lib.js?v=0.9.1');
   let nekad = false; try { await rpc('ta_bort_spel', { sid: 'bo-spel-1' }); } catch { nekad = true; }
   kolla('servern nekar att ta bort Bos spel', nekad && db.spel.some((s) => s.id === 'bo-spel-1'));
   kolla('Annas spel är skapade av Anna', db.spel.filter((s) => s.id !== 'bo-spel-1').every((s) => s.skapad_av === 'u-anna'));

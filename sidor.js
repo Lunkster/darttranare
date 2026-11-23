@@ -1,7 +1,7 @@
 // Sidor för en match och ett leg – nås genom att klicka på resultat, rader och rubriker.
 // Allt räknas ur vyerna (v_x01, v_resultat) och rundorna/pilarna – inget lagras.
-import { api, rpc, esc, fmt, proc, tid, datum, spelarLank, legLank, matchLank, turneringLank } from './lib.js?v=0.9.0';
-import { TYPER, setLage } from './spel.js?v=0.9.0';
+import { api, rpc, esc, fmt, proc, tid, datum, spelarLank, legLank, matchLank, turneringLank } from './lib.js?v=0.9.1';
+import { TYPER, setLage, ovningSumma, sdtText } from './spel.js?v=0.9.1';
 
 const hamtaRader = (filter) => Promise.all([
   api(`v_x01?${filter}&select=spel_id,spelare_id,namn,start,match_id,startpoang,vinnare,mot,poang,pilar,snitt,snitt_forsta9,pilar_dubbel,checkouts,utgang,plus100,plus140,maxar`),
@@ -97,7 +97,8 @@ export async function renderLeg(el, alla, sid) {
     protokoll = antal ? `<h2>Besök</h2><div class="tabellruta"><table class="tabell protokoll"><tr><th></th>${ordning.map((id) => `<th colspan="2">${esc(namn(id))}</th>`).join('')}</tr>${rad.join('')}</table></div>` : '';
   } else {
     stat = `<table class="tabell"><tr><th></th><th>Resultat</th><th>Pilar</th></tr>
-      ${rader.map((r) => `<tr><td>${spelarLank(r.spelare_id, r.namn)}</td><td>${resultatText(r)}</td><td>${r.pilar}</td></tr>`).join('')}</table>`;
+      ${rader.map((r) => `<tr><td>${spelarLank(r.spelare_id, r.namn)}</td><td>${resultatText(r)}</td><td>${r.pilar}</td></tr>`).join('')}</table>
+      ${typ === 'scoring' ? rader.map((r) => `<p class="sdt">${rader.length > 1 ? `${esc(r.namn)}: ` : ''}${sdtText(ovningSumma(typ, pilar.filter((p) => p.spelare_id === r.spelare_id)), inst.mal)}</p>`).join('') : ''}`;
     const antal = Math.max(0, ...pilar.map((p) => p.runda));
     const rad = [];
     for (let n = 1; n <= antal; n++) {

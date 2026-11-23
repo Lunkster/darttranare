@@ -1,6 +1,6 @@
 // Attrapp för Supabase (PostgREST + auth) i minnet – testerna rör aldrig riktiga databasen.
 // Ersätter window.fetch innan appen laddas. Påhittade spelare. Vyerna räknas med samma regler som i SQL.
-import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.9.0';
+import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.9.1';
 
 export const KOD = 'kod123';
 export const EPOST = 'anna@exempel.se';
@@ -59,7 +59,7 @@ const v = {
       const cm = pil.filter((x) => [15, 16, 17, 18, 19, 20, 25].includes(nummer(x.segment))).reduce((a, x) => a + mult(x.segment), 0) + (sp.resultat?.marks ?? 0);
       return {
         spel_id: s.id, spelare_id: sp.spelare_id, namn: v.spelnamn(sp.spelare_id), typ: s.typ, start: s.start, slut: s.slut, match_id: s.match_id, kalla: s.kalla ?? 'app',
-        installningar: s.installningar, vinnare: sp.vinnare, pilar: sm.pilar, traffar: s.typ === 'cricket' ? 0 : sm.traffar, marks: s.typ === 'cricket' ? 0 : sm.marks, rundor,
+        installningar: s.installningar, vinnare: sp.vinnare, pilar: sm.pilar, singlar: sm.singlar, dubblar: sm.dubblar, tripplar: sm.tripplar, traffar: s.typ === 'cricket' ? 0 : sm.traffar, marks: s.typ === 'cricket' ? 0 : sm.marks, rundor,
         poang: ['bobs27', 'jdc', 'scoring'].includes(s.typ) ? sm.poang : null, mpr: s.typ === 'cricket' ? Math.round((cm * 100) / rundor) / 100 : null,
       };
     }));

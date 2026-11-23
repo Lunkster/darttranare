@@ -115,8 +115,15 @@ export function ovningSumma(typ, pilar) {
     else poang += rundPoang(typ, r[0].mal, r.map((p) => p.segment));
   }
   const tr = pilar.filter((p) => traff(p.mal, p.segment));
-  return { poang: typ === 'dubbelrunda' ? null : poang, traffar: tr.length, pilar: pilar.length, marks: tr.reduce((a, p) => a + mult(p.segment), 0) };
+  const antal = (m) => tr.filter((p) => mult(p.segment) === m).length;
+  return { poang: typ === 'dubbelrunda' ? null : poang, traffar: tr.length, pilar: pilar.length, marks: tr.reduce((a, p) => a + mult(p.segment), 0),
+    singlar: antal(1), dubblar: antal(2), tripplar: antal(3) };
 }
+
+// Träffarna uppdelade på singel, dubbel och trippel – mål 25 har bara 25 och bull
+export const sdtText = (sm, mal, kort = false) => (String(mal) === '25'
+  ? `${sm.singlar} × 25 · ${sm.dubblar} × bull`
+  : kort ? `S ${sm.singlar} · D ${sm.dubblar} · T ${sm.tripplar}` : `${sm.singlar} singlar · ${sm.dubblar} dubblar · ${sm.tripplar} tripplar`);
 
 // Bob's 27 tar slut när poängen når noll eller lägre
 export const ovningSlut = (typ, summa) => typ === 'bobs27' && summa.poang <= 0;

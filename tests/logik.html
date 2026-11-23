@@ -3,7 +3,7 @@
 <style>body{font:15px system-ui;background:#111;color:#eee;padding:16px}.ok{color:#5c5}.fel{color:#f66;font-weight:700}</style></head>
 <body><h1>Logiktester</h1><pre id="ut"></pre>
 <script type="module">
-import * as S from '../spel.js?v=0.9.0';
+import * as S from '../spel.js?v=0.9.1';
 const ut = document.getElementById('ut'); let fel = 0, ok = 0;
 const kolla = (namn, villkor, extra = '') => { villkor ? ok++ : fel++; ut.innerHTML += `<span class="${villkor ? 'ok' : 'fel'}">${villkor ? 'OK ' : 'FEL'}</span> ${namn} ${extra}\n`; };
 const lika = (namn, a, b) => kolla(namn, JSON.stringify(a) === JSON.stringify(b), `→ ${JSON.stringify(a)}${JSON.stringify(a) === JSON.stringify(b) ? '' : ` (väntat ${JSON.stringify(b)})`}`);
@@ -33,12 +33,14 @@ const jdc = S.plan('jdc');
 lika('JDC-plan', [jdc.length, jdc.flat().length, jdc[6], jdc[12]], [19, 57, ['D1', 'D2', 'D3'], ['D19', 'D20', 'D25']]);
 lika('100 pilar-plan', [S.plan('scoring', { mal: '20', pilar: 100 }).length, S.plan('scoring', { mal: '20', pilar: 100 }).at(-1)], [34, ['20']]);
 const pilar = (lista) => lista.map((r, i) => r.map(([mal, segment], nr) => ({ runda: i + 1, nr: nr + 1, mal, segment }))).flat();
-lika("Bob's 27", S.ovningSumma('bobs27', pilar([[['D1', 'D1'], ['D1', 'M'], ['D1', 'M']], [['D2', 'M'], ['D2', 'M'], ['D2', 'M']]])), { poang: 25, traffar: 1, pilar: 6, marks: 2 });
+lika("Bob's 27", S.ovningSumma('bobs27', pilar([[['D1', 'D1'], ['D1', 'M'], ['D1', 'M']], [['D2', 'M'], ['D2', 'M'], ['D2', 'M']]])), { poang: 25, traffar: 1, pilar: 6, marks: 2, singlar: 0, dubblar: 1, tripplar: 0 });
 // JDC 1 från My Dart Training-backupen gav 427 poäng
 const jdc1 = '1.1.10.S10 1.2.10.M 1.3.10.M 2.1.11.M 2.2.11.M 2.3.11.M 3.1.12.D12 3.2.12.M 3.3.12.M 4.1.13.M 4.2.13.M 4.3.13.M 5.1.14.S14 5.2.14.T14 5.3.14.M 6.1.15.S15 6.2.15.T15 6.3.15.M 7.1.D1.D1 7.2.D2.M 7.3.D3.M 8.1.D4.M 8.2.D5.M 8.3.D6.M 9.1.D7.M 9.2.D8.M 9.3.D9.M 10.1.D10.M 10.2.D11.M 10.3.D12.M 11.1.D13.M 11.2.D14.D14 11.3.D15.M 12.1.D16.M 12.2.D17.M 12.3.D18.M 13.1.D19.M 13.2.D20.M 13.3.D25.M 14.1.15.T15 14.2.15.M 14.3.15.M 15.1.16.M 15.2.16.M 15.3.16.M 16.1.17.S17 16.2.17.S17 16.3.17.M 17.1.18.S18 17.2.18.M 17.3.18.M 18.1.19.M 18.2.19.M 18.3.19.M 19.1.20.S20 19.2.20.T20 19.3.20.M'
   .split(' ').map((t) => { const [runda, nr, mal, segment] = t.split('.'); return { runda: +runda, nr: +nr, mal, segment }; });
 lika('JDC som My Dart Training (427)', S.ovningSumma('jdc', jdc1).poang, 427);
 lika('JDC shanghai', S.rundPoang('jdc', '20', ['S20', 'D20', 'T20']), 220);
+lika('Scoring: singlar, dubblar, tripplar', (({ singlar, dubblar, tripplar }) => [singlar, dubblar, tripplar])(S.ovningSumma('scoring', pilar([[['20', 'T20'], ['20', 'S20'], ['20', 'S1']], [['20', 'D20'], ['20', 'S20'], ['20', 'M']]]))), [2, 1, 1]);
+lika('S/D/T-text, bull', S.sdtText({ singlar: 3, dubblar: 1, tripplar: 0 }, '25'), '3 × 25 · 1 × bull');
 lika('Scoring på bull', S.ovningSumma('scoring', pilar([[['25', 'S25'], ['25', 'D25'], ['25', 'M']]])).poang, 75);
 lika('knappar dubbel', S.knappar('D8').map((k) => k.seg), ['D8', 'M']);
 lika('knappar bull', S.knappar('25').map((k) => k.seg), ['S25', 'D25', 'M']);

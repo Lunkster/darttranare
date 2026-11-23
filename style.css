@@ -301,3 +301,7 @@ a.senrad:hover, a.legrad:hover { background: color-mix(in srgb, var(--gron-2) 8%
 .protokoll td.hog { color: var(--guld); font-weight: 700; }
 .protokoll td.ut { color: var(--gron-2); font-weight: 700; }
 .vald-gast { margin: 8px 0 0; }
+
+/* Pilar mot ett mål: singlar, dubblar, tripplar */
+.sdt { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-2); }
+.malvy .sdt { font-size: 15px; margin-top: 2px; }

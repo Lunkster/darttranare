@@ -1,8 +1,8 @@
 // Statistik per spelare: X01, cricket, övningarna och träff per dubbel. Allt räknas i vyerna.
-import { api, esc, fmt, proc, minns, jag, tid } from './lib.js?v=0.9.0';
-import { linje, staplar } from './diagram.js?v=0.9.0';
-import { malText, TYPER } from './spel.js?v=0.9.0';
-import { klubbInloggad, hamtaKlubb, klubbNycklar, klubbPunkter, klubbListor, kopplaKlubbListor, loggaInKlubb, klubbInfoKnapp, klubbInfo, kopplaKlubbInfo } from './klubb.js?v=0.9.0';
+import { api, esc, fmt, proc, minns, jag, tid } from './lib.js?v=0.9.1';
+import { linje, staplar } from './diagram.js?v=0.9.1';
+import { malText, TYPER, sdtText } from './spel.js?v=0.9.1';
+import { klubbInloggad, hamtaKlubb, klubbNycklar, klubbPunkter, klubbListor, kopplaKlubbListor, loggaInKlubb, klubbInfoKnapp, klubbInfo, kopplaKlubbInfo } from './klubb.js?v=0.9.1';
 
 const summa = (rader, f) => rader.reduce((a, r) => a + Number(r[f] ?? 0), 0);
 const max = (rader, f) => (rader.length ? Math.max(...rader.map((r) => Number(r[f] ?? -Infinity))) : null);
@@ -68,6 +68,7 @@ export async function renderStatistik(el, alla, spelareId = null) {
     return `<h3>${esc(malText(m === '25' ? '25' : m))}</h3><div class="nycklar">
       ${nyckel(fmt((100 * summa(r, 'marks')) / summa(r, 'pilar'), 0), 'marks per 100 pilar')}
       ${nyckel(proc(summa(r, 'traffar'), summa(r, 'pilar'), 1), 'träff')}${nyckel(summa(r, 'pilar'), 'pilar')}</div>
+      <p class="sdt">${sdtText({ singlar: summa(r, 'singlar'), dubblar: summa(r, 'dubblar'), tripplar: summa(r, 'tripplar') }, m)} <span class="muted">totalt</span></p>
       ${linje(r.map((x) => ({ x: x.start, y: (100 * x.marks) / x.pilar })), { dec: 0 })}`;
   }).join('')}</section>` : '';
 

@@ -1,5 +1,5 @@
 // Egna SVG-diagram utan bibliotek. Datum som ÅÅÅÅ-MM-DD, tal med decimalkomma.
-import { esc, fmt, datum } from './lib.js?v=0.9.0';
+import { esc, fmt, datum } from './lib.js?v=0.9.1';
 
 const B = 340, H = 180, M = { v: 38, h: 10, o: 12, n: 26 };
 

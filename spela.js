@@ -1,10 +1,10 @@
 // Starta och spela: X01, cricket och övningar. Pågående spel sparas lokalt efter varje kast,
 // färdiga legs/övningar läggs i offlinekön och skickas med spara_spel.
-import { esc, fmt, proc, minns, uuid, write, rpc, api, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.9.0';
+import { esc, fmt, proc, minns, uuid, write, rpc, api, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.9.1';
 import {
   TYPER, besok, fragaDubbel, utgang, kanGaUt, x01Snitt, plan, knappar, ovningSumma, ovningSlut,
-  cricketLage, CRICKET, marksText, segText, malText, traff,
-} from './spel.js?v=0.9.0';
+  cricketLage, CRICKET, marksText, segText, malText, traff, sdtText,
+} from './spel.js?v=0.9.1';
 
 let app = null;
 let inmatning = '';      // X01: siffror som skrivits in
@@ -468,7 +468,7 @@ function ovningVy(s) {
     };
     app.innerHTML = `<div class="card"><h1>${esc(titel)}</h1>
       ${s.spelare.map((id) => `<div class="resultat"><h2>${N(s, id)}: ${resultatText(per.get(id).summa)}</h2>
-        ${s.typ === 'scoring' ? `<p class="muted">${per.get(id).summa.marks} marks på ${per.get(id).summa.pilar} pilar</p>` : `<div class="malrutor">${malTabell(id)}</div>`}</div>`).join('')}
+        ${s.typ === 'scoring' ? `<p class="sdt">${sdtText(per.get(id).summa, s.inst.mal)}</p><p class="muted">${per.get(id).summa.marks} marks på ${per.get(id).summa.pilar} pilar</p>` : `<div class="malrutor">${malTabell(id)}</div>`}</div>`).join('')}
       ${slutKnappar(s, 'Ångra sista pilen')}</div>`;
     return kopplaSlut(s, (x) => x.leg.pilar.pop());
   }
@@ -482,6 +482,7 @@ function ovningVy(s) {
       <div class="liten muted">Runda ${mig.runda + 1} av ${pl.length}${s.spelare.length > 1 ? ` · ${N(s, tur)}` : ''}</div>
       <div class="mal">${esc(malText(mal))}</div>
       <div class="summa">${s.typ === 'dubbelrunda' ? `${mig.summa.traffar} träffar` : `${mig.summa.poang} poäng`} · ${proc(mig.summa.traffar, mig.summa.pilar)}</div>
+      ${s.typ === 'scoring' ? `<div class="sdt">${sdtText(mig.summa, s.inst.mal, true)}</div>` : ''}
     </div>
     <div class="pilrad">${pl[mig.runda].map((m, i) => `<span class="pil${rundaPilar[i] && traff(rundaPilar[i].mal, rundaPilar[i].segment) ? ' traff' : ''}">${rundaPilar[i] ? segText(rundaPilar[i].segment) : (m !== mal || i > mig.iRundan ? esc(malText(m)) : '')}</span>`).join('')}</div>
     <div class="knappar ${knappar(mal).length === 2 ? 'tva' : knappar(mal).length === 3 ? 'tre' : 'fyra'}">${knappar(mal).map((k) =>

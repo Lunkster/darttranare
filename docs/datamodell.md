@@ -98,9 +98,9 @@ Var och en har ett eget konto med rollen `dart` i `app_metadata`, kopplat till s
 | Vy | Innehåll |
 | --- | --- |
 | `v_pil` | Varje pil med nummer, multipel och om den träffade målet |
-| `v_runda_pil` | Per runda: pilar, träffar, marks, poäng på träff, cricket-marks, shanghai |
+| `v_runda_pil` | Per runda: pilar, träffar, marks, poäng på träff, cricket-marks, shanghai, singlar/dubblar/tripplar (11) |
 | `v_x01` | Per X01-leg och spelare: poäng, pilar, snitt, första 9, dubbelpilar, checkouts, högsta utgång, 100+/140+/180, kvar |
-| `v_resultat` | Övningar och cricket per spel och spelare: pilar, träffar, marks, rundor, poäng (Bob's 27, JDC, scoring), MPR |
+| `v_resultat` | Övningar och cricket per spel och spelare: pilar, träffar, marks, rundor, poäng (Bob's 27, JDC, scoring), MPR, singlar/dubblar/tripplar (11) |
 | `v_mal` | Träff per mål och spelare (dubblar, bull m.m.) |
 | `v_turnering_legvinst` | Vem som vann varje färdigt leg i en turneringsmatch, med starttid – för setställningen |
 | `v_turnering_leg` | Per turneringsmatch och spelare: legs, vunna legs, poäng och pilar (X01), marks och rundor (cricket) |
