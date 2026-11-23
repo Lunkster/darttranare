@@ -1,6 +1,6 @@
 // Nytt i appen: punktlistan per dag från Obsidian-anteckningen "Darttränaren - Nyheter"
 // (görs om till nyheter.json med ~/Dokument/Claude/Darttranare/skript/nyheter.py när anteckningen ändras).
-import { esc, minns } from './lib.js?v=0.8.0';
+import { esc, minns } from './lib.js?v=0.9.0';
 
 // **fet** → <strong>, *kursiv* → <em>, versionen i slutet dämpas
 const formatera = (t) => esc(t)

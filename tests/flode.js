@@ -1,7 +1,7 @@
 // Hela flödet mot attrappen: inloggning, X01 med bust och utgång, ogiltig poäng, Bob's 27, solocricket med ångra,
 // offline-kö, historik med ta bort och statistik. Kör: tests/attrapp.html?flode – slutar med "fel: 0".
-import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.8.0';
-import { ko, minns } from '../lib.js?v=0.8.0';
+import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.9.0';
+import { ko, minns } from '../lib.js?v=0.9.0';
 
 const ut = document.getElementById('testut');
 let fel = 0;
@@ -111,7 +111,7 @@ try {
   kolla('historik visar snitt', text('#app').includes('snitt'));
   await klick(`[data-tabort="${b.id}"]`); await vanta(300);
   kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 3);
-  const { rpc } = await import('../lib.js?v=0.8.0');
+  const { rpc } = await import('../lib.js?v=0.9.0');
   let nekad = false; try { await rpc('ta_bort_spel', { sid: 'bo-spel-1' }); } catch { nekad = true; }
   kolla('servern nekar att ta bort Bos spel', nekad && db.spel.some((s) => s.id === 'bo-spel-1'));
   kolla('Annas spel är skapade av Anna', db.spel.filter((s) => s.id !== 'bo-spel-1').every((s) => s.skapad_av === 'u-anna'));
@@ -151,7 +151,17 @@ try {
   await klick(knapp('Till Testcupen')); await vanta(500);
   kolla('tabellen räknar: Anna etta med 2 p', text('.turneringstabell tr:nth-child(2) td:first-child').includes('Anna') && text('.turneringstabell tr:nth-child(2) td:nth-child(6)') === '2', text('.turneringstabell tr:nth-child(2)'));
   kolla('matchen klar med Anna som vinnare', [...document.querySelectorAll('.matchrad.klar')].some((r) => ['1–0', '0–1'].includes(r.querySelector('.res').textContent) && r.querySelector('.vann')?.textContent === 'Anna'));
+  // Klicka sig vidare: resultat → match → leg → spelare → turnering
+  await klick([...document.querySelectorAll('.matchrad.klar .res a')].find((a) => a.closest('.matchrad').textContent.includes('Bo'))); await vanta(400);
+  kolla('resultatet leder till matchen', location.hash.startsWith('#/match/') && text('h1') === 'Match' && !!$('.tillbaka a[href^="#/turnering/"]') && document.querySelectorAll('a.legrad').length === 1, location.hash + ' ' + text('h1'));
+  await klick('a.legrad'); await vanta(400);
+  kolla('leget med besök och spelarlänkar', location.hash.startsWith('#/leg/') && document.querySelectorAll('.protokoll tr').length > 2 && !!$('#app a[href="#/spelare/1"]') && text('.protokoll').includes('141'), location.hash + ' ' + text('h1'));
+  await klick('#app table a[href="#/spelare/2"]'); await vanta(400);
+  kolla('namnet leder till spelarens statistik', location.hash === '#/spelare/2' && $('[data-spelare].vald')?.textContent === 'Bo' && $('.tabs a.active')?.dataset.route === 'statistik', location.hash);
+  await ga('#/historik');
+  kolla('historiken: rubriken och namnen är länkar', !!$('details.hrad summary a[href^="#/leg/"]') && !!$('details.hrad summary a[href="#/spelare/1"]'));
   await ga('#/');
+  kolla('startsidan: senaste spel leder till leget', !!$('a.senrad[href^="#/leg/"]'));
   kolla('startsidan visar turneringen', text('#turneringar').includes('Testcupen') && text('#turneringar').includes('Din nästa match'), text('#turneringar'));
   kolla('startsidan visar formen', text('#form').includes('X01-snitt'), text('#form'));
 

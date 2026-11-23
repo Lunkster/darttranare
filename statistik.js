@@ -1,18 +1,19 @@
 // Statistik per spelare: X01, cricket, övningarna och träff per dubbel. Allt räknas i vyerna.
-import { api, esc, fmt, proc, minns, jag } from './lib.js?v=0.8.0';
-import { linje, staplar } from './diagram.js?v=0.8.0';
-import { malText } from './spel.js?v=0.8.0';
-import { klubbInloggad, hamtaKlubb, klubbNycklar, klubbPunkter, klubbListor, kopplaKlubbListor, loggaInKlubb, klubbInfoKnapp, klubbInfo, kopplaKlubbInfo } from './klubb.js?v=0.8.0';
+import { api, esc, fmt, proc, minns, jag, tid } from './lib.js?v=0.9.0';
+import { linje, staplar } from './diagram.js?v=0.9.0';
+import { malText, TYPER } from './spel.js?v=0.9.0';
+import { klubbInloggad, hamtaKlubb, klubbNycklar, klubbPunkter, klubbListor, kopplaKlubbListor, loggaInKlubb, klubbInfoKnapp, klubbInfo, kopplaKlubbInfo } from './klubb.js?v=0.9.0';
 
 const summa = (rader, f) => rader.reduce((a, r) => a + Number(r[f] ?? 0), 0);
 const max = (rader, f) => (rader.length ? Math.max(...rader.map((r) => Number(r[f] ?? -Infinity))) : null);
 const nyckel = (v, t) => `<div class="nyckel"><div class="v">${v}</div><div class="t">${t}</div></div>`;
 
-export async function renderStatistik(el, alla) {
-  // Bara registrerade spelare (med konto) – gäster finns kvar i databasen men visas inte här
+export async function renderStatistik(el, alla, spelareId = null) {
+  // Bara registrerade spelare (med konto) i valet – gäster finns kvar i databasen men visas inte här.
+  // #/spelare/<id> (länk från namn) visar vem som helst, även en gäst.
   const aktiva = alla.filter((s) => s.aktiv && s.anvandare);
-  let vald = minns('statspelare') ?? jag(alla)?.id ?? aktiva[0]?.id;
-  if (!aktiva.some((s) => s.id === vald)) vald = jag(alla)?.id ?? aktiva[0]?.id;
+  let vald = spelareId ?? minns('statspelare') ?? jag(alla)?.id ?? aktiva[0]?.id;
+  if (spelareId === null && !aktiva.some((s) => s.id === vald)) vald = jag(alla)?.id ?? aktiva[0]?.id;
   const [x01, ovr, mal] = await Promise.all([
     api(`v_x01?spelare_id=eq.${vald}&order=start`),
     api(`v_resultat?spelare_id=eq.${vald}&order=start`),
@@ -76,9 +77,12 @@ export async function renderStatistik(el, alla) {
   const dubRader = [...dub].sort((a, b) => Number(a[0].slice(1)) - Number(b[0].slice(1)))
     .map(([m, d]) => ({ text: malText(m), varde: d.p ? d.t / d.p : 0, etikett: `${proc(d.t, d.p)} (${d.t}/${d.p})` }));
 
+  // De tio senaste spelen – varje rad leder till leget
+  const senaste = [...x01.map((r) => ({ ...r, typ: 'x01' })), ...ovr].sort((a, b) => (a.start < b.start ? 1 : -1)).slice(0, 10);
   el.innerHTML = `
     <div class="card"><h1>Statistik</h1>
       <div class="val">${aktiva.map((s) => `<button type="button" class="chip${s.id === vald ? ' vald' : ''}" data-spelare="${s.id}">${esc(s.namn)}</button>`).join('')}</div>
+      ${aktiva.some((s) => s.id === vald) ? '' : `<p class="vald-gast"><b>${esc(spelaren?.namn ?? '?')}</b>${spelaren?.anvandare ? '' : ' <span class="gast">gäst</span>'}</p>`}
       ${vald !== jag(alla)?.id ? '<p class="forklaring">Visar bara spel där du själv var med.</p>' : ''}
     </div>
     <section class="card" id="x01kort"><h2>X01</h2>${x01html}</section>
@@ -89,7 +93,11 @@ export async function renderStatistik(el, alla) {
       ${nyckel(proc(summa(typ('dubbelrunda'), 'traffar'), summa(typ('dubbelrunda'), 'pilar'), 1), 'träff')}${nyckel(typ('dubbelrunda').length, 'varv')}</div>
       ${linje(typ('dubbelrunda').map((x) => ({ x: x.start, y: (100 * x.traffar) / x.pilar })), { dec: 1, enhet: ' %' })}</section>` : ''}
     ${schtml}
-    <section class="card"><h2>Träff per dubbel</h2><p class="forklaring">Alla pilar mot dubblar i övningarna (Bob's 27, runt dubblarna, JDC).</p>${staplar(dubRader)}</section>`;
+    <section class="card"><h2>Träff per dubbel</h2><p class="forklaring">Alla pilar mot dubblar i övningarna (Bob's 27, runt dubblarna, JDC).</p>${staplar(dubRader)}</section>
+    ${senaste.length ? `<section class="card"><h2>Senaste spel</h2>${senaste.map((r) => `<a class="legrad" href="#/leg/${r.spel_id}"><span class="muted">${tid(r.start).slice(0, 10)}</span>
+      <span>${r.vinnare ? '🏆 ' : ''}${esc(r.typ === 'x01' ? `X01 ${r.startpoang ?? ''}` : TYPER[r.typ]?.namn ?? r.typ)}</span>
+      <b>${r.typ === 'x01' ? fmt(r.snitt, 1) : r.typ === 'cricket' ? `MPR ${fmt(r.mpr, 2)}` : r.typ === 'dubbelrunda' ? `${r.traffar} träff` : `${r.poang} p`}</b></a>`).join('')}
+      <p class="rad"><a class="lank" href="#/historik">Alla spel</a></p></section>` : ''}`;
 
   if (spelaren?.bdc_id && klubbInloggad()) {
     hamtaKlubb(spelaren.bdc_id).then((d) => {
@@ -105,5 +113,8 @@ export async function renderStatistik(el, alla) {
     });
   }
   kopplaKlubbInfo(el);
-  el.querySelectorAll('[data-spelare]').forEach((b) => b.onclick = () => { minns('statspelare', Number(b.dataset.spelare)); renderStatistik(el, alla); });
+  el.querySelectorAll('[data-spelare]').forEach((b) => b.onclick = () => {
+    minns('statspelare', Number(b.dataset.spelare));
+    if (spelareId !== null) location.hash = '#/statistik'; else renderStatistik(el, alla);
+  });
 }

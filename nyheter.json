@@ -2,6 +2,7 @@
  {
   "datum": "2026-11-23",
   "punkter": [
+   "**Klicka dig vidare:** tryck på ett namn, ett resultat eller ett spel för att se spelaren, matchen eller leget – med varje besök och legs i matchen. (v0.9.0)",
    "**Löpande serie:** spela 10, 20 eller 30 matcher mot en kompis i tur och ordning och följ ställningen. Välj spelform, legs och set – alla med konto kan starta en under Turneringar → Ny turnering. (v0.8.0)",
    "**Lugnare tävlingsstatistik:** var tävlingarna kommer ifrån står nu bakom i-knappen vid rubriken Tävling. (v0.7.3)",
    "**Statistiken visar bara registrerade spelare:** gäster syns inte längre i spelarvalet under Statistik, men deras spel finns kvar. (v0.7.2)"

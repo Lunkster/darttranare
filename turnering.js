@@ -1,8 +1,8 @@
 // Turneringar: lista, skapa (bara admin), tabell eller utslagsträd, matcher att spela.
 // Matchresultat och tabell räknas i spel.js ur vyn v_turnering_leg – inget lagras.
-import { api, rpc, esc, fmt, jag, arAdmin, anvandarId, minns, uuid, datum } from './lib.js?v=0.8.0';
-import { serieSchema, utslagSchema, lopandeSchema, matchlagen, turneringstabell } from './spel.js?v=0.8.0';
-import { startaTurneringsmatch, startaDistans, gaMed } from './spela.js?v=0.8.0';
+import { api, rpc, esc, fmt, jag, arAdmin, anvandarId, minns, uuid, datum, spelarLank, matchLank } from './lib.js?v=0.9.0';
+import { serieSchema, utslagSchema, lopandeSchema, matchlagen, turneringstabell } from './spel.js?v=0.9.0';
+import { startaTurneringsmatch, startaDistans, gaMed } from './spela.js?v=0.9.0';
 
 const FORMAT = { serie: 'Serie', utslag: 'Utslag', lopande: 'Löpande serie' };
 const antalSet = (t) => t.installningar?.set ?? 1;
@@ -77,6 +77,7 @@ export async function renderTurnering(el, alla, id) {
   const t = lista.find((x) => x.id === id);
   if (!t) { el.innerHTML = '<div class="card"><h1>Turneringen finns inte</h1><p class="muted">Eller så är du inte med i den.</p><a class="btn" href="#/turneringar">Alla turneringar</a></div>'; return; }
   const mig = jag(alla)?.id, N = (pid) => (pid === null || pid === undefined ? '–' : esc(alla.find((s) => s.id === pid)?.namn ?? '?'));
+  const NL = (pid) => (pid === null || pid === undefined ? '–' : spelarLank(pid, alla.find((s) => s.id === pid)?.namn ?? '?'));   // namn som länk
   const mina = minaMatcher(t, mig);
   const kanSpela = (m) => m.spelbar && (m.p1 === mig || m.p2 === mig || t.deltagare.includes(mig) || arAdmin());
   const harKonto = (pid) => !!alla.find((s) => s.id === pid)?.anvandare;
@@ -91,9 +92,9 @@ export async function renderTurnering(el, alla, id) {
     return `<button class="btn liten${m.p1 === mig || m.p2 === mig ? ' primar' : ''}" data-spela="${m.id}" type="button">${m.pagar ? 'Fortsätt' : 'Spela'}</button>`;
   };
   const matchrad = (m) => `<div class="matchrad${m.klar ? ' klar' : ''}">
-      <span class="${m.vinnare === m.p1 && m.p1 !== null ? 'vann' : ''}">${N(m.p1)}</span>
-      <span class="res">${m.walkover ? 'w.o.' : m.klar || m.pagar ? resultat(t, m) : 'mot'}</span>
-      <span class="${m.vinnare === m.p2 && m.p2 !== null ? 'vann' : ''}">${N(m.p2)}</span>
+      <span class="${m.vinnare === m.p1 && m.p1 !== null ? 'vann' : ''}">${NL(m.p1)}</span>
+      <span class="res">${m.walkover ? 'w.o.' : m.klar || m.pagar ? matchLank(m.id, resultat(t, m)) : 'mot'}</span>
+      <span class="${m.vinnare === m.p2 && m.p2 !== null ? 'vann' : ''}">${NL(m.p2)}</span>
       ${knapp(m)}
     </div>`;
   const rundor = [...new Set(t.lagen.map((m) => m.runda))];
@@ -106,8 +107,8 @@ export async function renderTurnering(el, alla, id) {
     const tal = (p) => (t.typ === 'x01' ? fmt(r(p)?.snitt, 1) : fmt(r(p)?.mpr, 2));
     const nasta = t.lagen.find((m) => !m.klar);
     return `<div class="card"><h2>Ställning</h2>
-      <div class="lopstallning"><span class="${v(a) > v(b) ? 'vann' : ''}">${N(a)}</span><b>${v(a)}–${v(b)}</b><span class="${v(b) > v(a) ? 'vann' : ''}">${N(b)}</span></div>
-      <table class="tabell turneringstabell"><tr><th></th><th>${N(a)}</th><th>${N(b)}</th></tr>
+      <div class="lopstallning"><span class="${v(a) > v(b) ? 'vann' : ''}">${NL(a)}</span><b>${v(a)}–${v(b)}</b><span class="${v(b) > v(a) ? 'vann' : ''}">${NL(b)}</span></div>
+      <table class="tabell turneringstabell"><tr><th></th><th>${NL(a)}</th><th>${NL(b)}</th></tr>
         <tr><td>Matcher</td><td>${v(a)}</td><td>${v(b)}</td></tr>
         ${antalSet(t) > 1 ? `<tr><td>Set</td><td>${klara.reduce((x, m) => x + (m.p1 === a ? m.set1 : m.set2), 0)}</td><td>${klara.reduce((x, m) => x + (m.p1 === b ? m.set1 : m.set2), 0)}</td></tr>` : ''}
         <tr><td>Legs</td><td>${r(a)?.legsFor ?? 0}</td><td>${r(b)?.legsFor ?? 0}</td></tr>
@@ -122,7 +123,7 @@ export async function renderTurnering(el, alla, id) {
     <div class="card">
       <h1>${esc(t.namn)}</h1>
       <p class="muted">${formText(t)} · skapad ${datum(t.skapad)}</p>
-      ${t.klar && !lop ? `<p class="vinnarrad">🏆 ${N(t.format === 'utslag' ? t.lagen.at(-1)?.vinnare : tabell[0]?.spelare_id)}</p>` : ''}
+      ${t.klar && !lop ? `<p class="vinnarrad">🏆 ${NL(t.format === 'utslag' ? t.lagen.at(-1)?.vinnare : tabell[0]?.spelare_id)}</p>` : ''}
       ${lop && t.klar ? `<p class="vinnarrad">${lopandeStatus(t, N)}</p>` : ''}
       ${mina.length && !lop ? `<h3>Dina matcher</h3>${mina.map(matchrad).join('')}` : ''}
       ${lop && mina.length ? `<h3>Match ${mina[0].runda} av ${t.lagen.length}</h3>${mina.map(matchrad).join('')}` : ''}
@@ -131,7 +132,7 @@ export async function renderTurnering(el, alla, id) {
     ${lop ? lopHtml() : ''}
     ${t.format === 'serie' ? `<div class="card"><h2>Tabell</h2>
       <table class="tabell turneringstabell"><tr><th></th><th>M</th><th>V</th><th>F</th><th>Legs</th><th>P</th><th>${t.typ === 'x01' ? 'Snitt' : 'MPR'}</th></tr>
-      ${tabell.map((r, i) => `<tr class="${r.spelare_id === mig ? 'jag' : ''}"><td>${i + 1}. ${N(r.spelare_id)}</td><td>${r.matcher}</td><td>${r.vunna}</td><td>${r.forlorade}</td>
+      ${tabell.map((r, i) => `<tr class="${r.spelare_id === mig ? 'jag' : ''}"><td>${i + 1}. ${NL(r.spelare_id)}</td><td>${r.matcher}</td><td>${r.vunna}</td><td>${r.forlorade}</td>
         <td>${r.legsFor}–${r.legsMot}</td><td><b>${r.poang}</b></td><td>${t.typ === 'x01' ? fmt(r.snitt, 1) : fmt(r.mpr, 2)}</td></tr>`).join('')}</table>
       <p class="forklaring">2 poäng per vunnen match, sedan legsskillnad och ${t.typ === 'x01' ? 'snitt' : 'MPR'}.</p></div>` : ''}
     ${lop ? '' : `<div class="card"><h2>${t.format === 'serie' ? 'Matcher' : 'Lottning'}</h2>

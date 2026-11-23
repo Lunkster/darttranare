@@ -1,6 +1,6 @@
 // Attrapp för Supabase (PostgREST + auth) i minnet – testerna rör aldrig riktiga databasen.
 // Ersätter window.fetch innan appen laddas. Påhittade spelare. Vyerna räknas med samma regler som i SQL.
-import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.8.0';
+import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.9.0';
 
 export const KOD = 'kod123';
 export const EPOST = 'anna@exempel.se';
@@ -128,6 +128,9 @@ window.fetch = async (url, init = {}) => {
   const t = u.pathname.replace('/rest/v1/', ''), q = u.searchParams;
   if (m === 'GET') {
     const kalla = { v_x01: v.x01, v_resultat: v.resultat, v_mal: v.mal, v_turnering_leg: v.turneringLeg, v_turnering_legvinst: v.turneringLegvinst,
+      spel: () => synliga().map(({ spelare, rundor, pilar, ...x }) => ({ turnering_match: null, ...x })),
+      runda: () => synliga().flatMap((x) => x.rundor.map((r) => ({ spel_id: x.id, pilar: 3, pilar_dubbel: 0, checkout: false, ...r }))),
+      pil: () => synliga().flatMap((x) => x.pilar.map((p) => ({ spel_id: x.id, ...p }))),
       turnering: synligaTurneringar, turnering_deltagare: () => db.turnering_deltagare.filter((d) => iTurnering(d.turnering_id)),
       turnering_match: () => db.turnering_match.filter((m) => iTurnering(m.turnering_id)),
       live_match: () => structuredClone(db.live_match.filter((l) => iTurnering(db.turnering_match.find((m) => m.id === l.turnering_match)?.turnering_id))) }[t]?.() ?? db[t];

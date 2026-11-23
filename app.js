@@ -1,12 +1,13 @@
 // Router, inloggning, spelarlistan och offlinekön.
-import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.8.0';
-import { renderStart, renderSpel } from './spela.js?v=0.8.0';
-import { renderHistorik } from './historik.js?v=0.8.0';
-import { renderStatistik } from './statistik.js?v=0.8.0';
-import { renderJag } from './jag.js?v=0.8.0';
-import { renderNyheter, markeraOsedda } from './nyheter.js?v=0.8.0';
-import { renderHem } from './hem.js?v=0.8.0';
-import { renderTurneringar, renderTurnering, renderNyTurnering } from './turnering.js?v=0.8.0';
+import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.9.0';
+import { renderStart, renderSpel } from './spela.js?v=0.9.0';
+import { renderHistorik } from './historik.js?v=0.9.0';
+import { renderStatistik } from './statistik.js?v=0.9.0';
+import { renderJag } from './jag.js?v=0.9.0';
+import { renderNyheter, markeraOsedda } from './nyheter.js?v=0.9.0';
+import { renderHem } from './hem.js?v=0.9.0';
+import { renderTurneringar, renderTurnering, renderNyTurnering } from './turnering.js?v=0.9.0';
+import { renderMatch, renderLeg } from './sidor.js?v=0.9.0';
 
 const app = document.getElementById('app');
 
@@ -29,7 +30,7 @@ function visaKo() {
 
 async function route() {
   const [vy, ...arg] = location.hash.replace(/^#\/?/, '').split('/');
-  const flik = { '': 'hem', ny: 'hem', spel: 'hem', turnering: 'turneringar' }[vy] ?? vy;
+  const flik = { '': 'hem', ny: 'hem', spel: 'hem', turnering: 'turneringar', spelare: 'statistik', match: 'historik', leg: 'historik' }[vy] ?? vy;
   document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('active', a.dataset.route === flik));
   document.getElementById('loggaut').hidden = !isLoggedIn();
   visaKo();
@@ -44,6 +45,9 @@ async function route() {
     if (vy === 'spel') return renderSpel(app);
     if (vy === 'historik') return await renderHistorik(app, await spelare());
     if (vy === 'statistik') return await renderStatistik(app, await spelare());
+    if (vy === 'spelare' && arg[0]) return await renderStatistik(app, await spelare(), Number(arg[0]));
+    if (vy === 'match' && arg[0]) return await renderMatch(app, await spelare(), arg[0]);
+    if (vy === 'leg' && arg[0]) return await renderLeg(app, await spelare(), arg[0]);
     if (vy === 'jag') return renderJag(app, await spelare(), visaInloggad);
     if (vy === 'ny') return renderStart(app, await spelare(), arg[0]);
     if (vy === 'turneringar') return await renderTurneringar(app, await spelare());

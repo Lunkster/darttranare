@@ -1,8 +1,8 @@
 // Startsidan: fortsätt spel, nästa turneringsmatch, snabbstart, form och senaste spel.
-import { api, esc, fmt, jag, minns, tid } from './lib.js?v=0.8.0';
-import { TYPER } from './spel.js?v=0.8.0';
-import { hamtaTurneringar, minaMatcher, hamtaLive } from './turnering.js?v=0.8.0';
-import { gaMed } from './spela.js?v=0.8.0';
+import { api, esc, fmt, jag, minns, tid } from './lib.js?v=0.9.0';
+import { TYPER } from './spel.js?v=0.9.0';
+import { hamtaTurneringar, minaMatcher, hamtaLive } from './turnering.js?v=0.9.0';
+import { gaMed } from './spela.js?v=0.9.0';
 
 const VECKODAG = ['söndag', 'måndag', 'tisdag', 'onsdag', 'torsdag', 'fredag', 'lördag'];
 const RUTOR = [
@@ -74,7 +74,7 @@ export async function renderHem(el, alla) {
     const senaste = [...x01.map((r) => ({ ...r, typ: 'x01' })), ...ovr].sort((a, b) => (a.start < b.start ? 1 : -1)).slice(0, 4);
     const res = (r) => (r.typ === 'x01' ? `snitt ${fmt(r.snitt, 1)}` : r.typ === 'cricket' ? `MPR ${fmt(r.mpr, 2)}` : r.typ === 'dubbelrunda' ? `${r.traffar} träff` : `${r.poang} p`);
     el.querySelector('#senaste').innerHTML = senaste.length ? `<h2 class="hemrubrik">Senaste</h2><div class="card senaste">
-      ${senaste.map((r) => `<div class="senrad"><span>${r.vinnare ? '🏆 ' : ''}${esc(r.typ === 'x01' ? `X01 ${r.startpoang}${r.mot ? ` mot ${r.mot}` : ''}` : TYPER[r.typ]?.namn ?? r.typ)}</span><span class="muted">${tid(r.start).slice(0, 10)}</span><b>${res(r)}</b></div>`).join('')}
+      ${senaste.map((r) => `<a class="senrad" href="#/leg/${r.spel_id}"><span>${r.vinnare ? '🏆 ' : ''}${esc(r.typ === 'x01' ? `X01 ${r.startpoang}${r.mot ? ` mot ${r.mot}` : ''}` : TYPER[r.typ]?.namn ?? r.typ)}</span><span class="muted">${tid(r.start).slice(0, 10)}</span><b>${res(r)}</b></a>`).join('')}
       <p class="rad"><a href="#/historik">Alla spel</a> · <a href="#/statistik">Statistik</a></p></div>` : '';
   } catch { /* utan nät: bara snabbstart och pågående spel */ }
 }

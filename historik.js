@@ -1,18 +1,21 @@
 // Historik: spel man själv var med i (RLS), nyast först, med möjlighet att ta bort. Spel i offlinekön visas överst.
-import { api, rpc, esc, fmt, proc, tid, ko, skickaKo } from './lib.js?v=0.8.0';
-import { TYPER } from './spel.js?v=0.8.0';
+import { api, rpc, esc, fmt, proc, tid, ko, skickaKo, spelarLank, legLank, matchLank } from './lib.js?v=0.9.0';
+import { TYPER } from './spel.js?v=0.9.0';
 
 export async function renderHistorik(el, alla) {
   const [x01, ovr] = await Promise.all([
-    api('v_x01?select=spel_id,spelare_id,namn,start,kalla,startpoang,vinnare,mot,snitt,pilar,checkouts,pilar_dubbel&order=start.desc&limit=600'),
-    api('v_resultat?select=spel_id,spelare_id,namn,typ,start,kalla,installningar,vinnare,pilar,traffar,poang,mpr&order=start.desc&limit=600'),
+    api('v_x01?select=spel_id,spelare_id,namn,start,kalla,match_id,startpoang,vinnare,mot,snitt,pilar,checkouts,pilar_dubbel&order=start.desc&limit=600'),
+    api('v_resultat?select=spel_id,spelare_id,namn,typ,start,kalla,match_id,installningar,vinnare,pilar,traffar,poang,mpr&order=start.desc&limit=600'),
   ]);
   const spel = new Map();
   for (const r of [...x01.map((x) => ({ ...x, typ: 'x01' })), ...ovr]) {
-    if (!spel.has(r.spel_id)) spel.set(r.spel_id, { id: r.spel_id, typ: r.typ, start: r.start, kalla: r.kalla, rader: [], r });
+    if (!spel.has(r.spel_id)) spel.set(r.spel_id, { id: r.spel_id, typ: r.typ, start: r.start, kalla: r.kalla, match_id: r.match_id, rader: [], r });
     spel.get(r.spel_id).rader.push(r);
   }
   const lista = [...spel.values()].sort((a, b) => (a.start < b.start ? 1 : -1));
+  // Legs per match – en match med flera legs får en länk till matchsidan
+  const iMatch = new Map();
+  lista.forEach((s) => { if (s.match_id) iMatch.set(s.match_id, (iMatch.get(s.match_id) ?? 0) + 1); });
   const kon = ko();
   const namn = (id) => alla.find((s) => s.id === id)?.namn ?? '?';
 
@@ -36,9 +39,11 @@ export async function renderHistorik(el, alla) {
       <button class="btn liten" id="skicka" type="button">Skicka nu</button> <span id="skickamsg" class="msg"></span></div>` : ''}
     ${lista.length ? '' : '<p class="muted">Inga spel än.</p>'}
     ${lista.map((s) => `<details class="hrad">
-      <summary><span class="tid">${tid(s.start)}</span> <b>${s.typ === 'x01' ? 'X01 ' : ''}${rubrik(s)}</b>${s.kalla === 'mdt' ? ' <span class="etikett">MDT</span>' : ''}
-        <span class="hres">${s.rader.sort((a, b) => b.vinnare - a.vinnare).map((r) => `${r.vinnare && s.rader.length > 1 ? '🏆 ' : ''}${esc(r.namn)} ${resultat(s, r)}`).join(' · ')}</span></summary>
-      <p><button class="btn liten fara" data-tabort="${s.id}" type="button">Ta bort spelet</button></p></details>`).join('')}
+      <summary><span class="tid">${tid(s.start)}</span> <b>${legLank(s.id, `${s.typ === 'x01' ? 'X01 ' : ''}${rubrik(s)}`)}</b>${s.kalla === 'mdt' ? ' <span class="etikett">MDT</span>' : ''}
+        ${iMatch.get(s.match_id) > 1 ? `<span class="hmatch">${matchLank(s.match_id, 'match')}</span>` : ''}
+        <span class="hres">${s.rader.sort((a, b) => b.vinnare - a.vinnare).map((r) => `${r.vinnare && s.rader.length > 1 ? '🏆 ' : ''}${spelarLank(r.spelare_id, r.namn)} ${resultat(s, r)}`).join(' · ')}</span></summary>
+      <p class="rad">${legLank(s.id, 'Visa leget')}${iMatch.get(s.match_id) > 1 ? ` · ${matchLank(s.match_id, 'Hela matchen')}` : ''}
+        <button class="btn liten fara" data-tabort="${s.id}" type="button">Ta bort spelet</button></p></details>`).join('')}
   </div>`;
 
   el.querySelector('#skicka')?.addEventListener('click', async () => {

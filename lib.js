@@ -124,6 +124,11 @@ export function skickaKo() {
 
 // ---------- hjälp ----------
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Länkar till spelare, match, leg och turnering – används i tabeller, rubriker och listor
+export const spelarLank = (id, namn) => (id === null || id === undefined ? esc(namn ?? '–') : `<a class="lank" href="#/spelare/${id}">${esc(namn ?? '?')}</a>`);
+export const legLank = (id, text) => `<a class="lank" href="#/leg/${id}">${text}</a>`;
+export const matchLank = (id, text) => `<a class="lank" href="#/match/${id}">${text}</a>`;
+export const turneringLank = (id, namn) => `<a class="lank" href="#/turnering/${id}">${esc(namn)}</a>`;
 export const fmt = (v, d = 1) => (v === null || v === undefined || v === '' || Number.isNaN(Number(v))) ? '–'
   : Number(v).toLocaleString('sv-SE', { minimumFractionDigits: d, maximumFractionDigits: d });
 export const proc = (a, b, d = 0) => (b ? `${fmt((100 * a) / b, d)} %` : '–');
