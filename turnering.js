@@ -1,8 +1,8 @@
 // Turneringar: lista, skapa (bara admin), tabell eller utslagsträd, matcher att spela.
 // Matchresultat och tabell räknas i spel.js ur vyn v_turnering_leg – inget lagras.
-import { api, rpc, esc, fmt, jag, arAdmin, anvandarId, minns, uuid, datum, spelarLank, matchLank } from './lib.js?v=0.9.1';
-import { serieSchema, utslagSchema, lopandeSchema, matchlagen, turneringstabell } from './spel.js?v=0.9.1';
-import { startaTurneringsmatch, startaDistans, gaMed } from './spela.js?v=0.9.1';
+import { api, rpc, esc, fmt, jag, arAdmin, anvandarId, minns, uuid, datum, spelarLank, matchLank } from './lib.js?v=0.9.2';
+import { serieSchema, utslagSchema, lopandeSchema, matchlagen, turneringstabell } from './spel.js?v=0.9.2';
+import { startaTurneringsmatch, startaDistans, gaMed } from './spela.js?v=0.9.2';
 
 const FORMAT = { serie: 'Serie', utslag: 'Utslag', lopande: 'Löpande serie' };
 const antalSet = (t) => t.installningar?.set ?? 1;

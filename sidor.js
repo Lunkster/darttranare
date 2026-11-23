@@ -1,7 +1,7 @@
 // Sidor för en match och ett leg – nås genom att klicka på resultat, rader och rubriker.
 // Allt räknas ur vyerna (v_x01, v_resultat) och rundorna/pilarna – inget lagras.
-import { api, rpc, esc, fmt, proc, tid, datum, spelarLank, legLank, matchLank, turneringLank } from './lib.js?v=0.9.1';
-import { TYPER, setLage, ovningSumma, sdtText } from './spel.js?v=0.9.1';
+import { api, rpc, esc, fmt, proc, tid, datum, spelarLank, legLank, matchLank, turneringLank } from './lib.js?v=0.9.2';
+import { TYPER, setLage, ovningSumma, sdtText } from './spel.js?v=0.9.2';
 
 const hamtaRader = (filter) => Promise.all([
   api(`v_x01?${filter}&select=spel_id,spelare_id,namn,start,match_id,startpoang,vinnare,mot,poang,pilar,snitt,snitt_forsta9,pilar_dubbel,checkouts,utgang,plus100,plus140,maxar`),

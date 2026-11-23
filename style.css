@@ -126,6 +126,11 @@ table.cricket tr.poang td, table.cricket tr:last-child td { font-size: 16px; }
 .nyckel { background: var(--kort-2); border-radius: 10px; padding: 8px; text-align: center; }
 .nyckel .v { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .nyckel .t { font-size: 12px; color: var(--text-3); }
+/* Exakt fyra nyckeltal (övningarna): alla på en rad, smalare rutor. Sex rutor (X01) radbryts som förut. */
+.nycklar:has(> .nyckel:nth-child(4):last-child) { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.nycklar:has(> .nyckel:nth-child(4):last-child) .nyckel { padding: 8px 2px; }
+.nycklar:has(> .nyckel:nth-child(4):last-child) .v { font-size: clamp(16px, 5vw, 22px); white-space: nowrap; }
+.nycklar:has(> .nyckel:nth-child(4):last-child) .t { font-size: 11px; overflow-wrap: anywhere; }
 
 /* historik */
 .hrad { border-bottom: 1px solid var(--linje); padding: 8px 0; }

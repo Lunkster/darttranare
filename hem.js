@@ -1,8 +1,8 @@
 // Startsidan: fortsätt spel, nästa turneringsmatch, snabbstart, form och senaste spel.
-import { api, esc, fmt, jag, minns, tid } from './lib.js?v=0.9.1';
-import { TYPER } from './spel.js?v=0.9.1';
-import { hamtaTurneringar, minaMatcher, hamtaLive } from './turnering.js?v=0.9.1';
-import { gaMed } from './spela.js?v=0.9.1';
+import { api, esc, fmt, jag, minns, tid } from './lib.js?v=0.9.2';
+import { TYPER } from './spel.js?v=0.9.2';
+import { hamtaTurneringar, minaMatcher, hamtaLive } from './turnering.js?v=0.9.2';
+import { gaMed } from './spela.js?v=0.9.2';
 
 const VECKODAG = ['söndag', 'måndag', 'tisdag', 'onsdag', 'torsdag', 'fredag', 'lördag'];
 const RUTOR = [

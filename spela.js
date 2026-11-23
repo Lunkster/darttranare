@@ -1,10 +1,10 @@
 // Starta och spela: X01, cricket och övningar. Pågående spel sparas lokalt efter varje kast,
 // färdiga legs/övningar läggs i offlinekön och skickas med spara_spel.
-import { esc, fmt, proc, minns, uuid, write, rpc, api, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.9.1';
+import { esc, fmt, proc, minns, uuid, write, rpc, api, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.9.2';
 import {
   TYPER, besok, fragaDubbel, utgang, kanGaUt, x01Snitt, plan, knappar, ovningSumma, ovningSlut,
   cricketLage, CRICKET, marksText, segText, malText, traff, sdtText,
-} from './spel.js?v=0.9.1';
+} from './spel.js?v=0.9.2';
 
 let app = null;
 let inmatning = '';      // X01: siffror som skrivits in
