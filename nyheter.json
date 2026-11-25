@@ -1,5 +1,16 @@
 [
  {
+  "datum": "2026-11-25",
+  "punkter": [
+   "**Gäster under Gäst:** när du väljer spelare syns bara de med konto; tryck *+ Gäst* för gästerna eller för att lägga till en ny. (v0.10.0)",
+   "**Tydligare frågor:** frågor som *Avbryta spelet?* visas i appens egen ruta med loggan. (v0.10.0)",
+   "**Spara och avsluta:** när omgången är klar ser du *✓ Sparat* och avslutar med *Spara och avsluta* – ett färdigt spel ligger inte kvar i bakgrunden. (v0.10.0)",
+   "**Större i övningarna:** målet och texten runt det är mycket större, så du ser dem från kastlinjen. (v0.10.0)",
+   "**Catch 40:** ny övning – utgångarna 61 till 100 med högst sex pilar på varje, tryck hur många pilar det gick åt. (v0.10.0)",
+   "**Bob's 27 på minus:** du kan spela vidare under noll i stället för att åka ut – välj innan du startar. (v0.10.0)"
+  ]
+ },
+ {
   "datum": "2026-11-23",
   "punkter": [
    "**Tätare statistik:** övningarnas fyra nyckeltal får plats på en rad. (v0.9.2)",

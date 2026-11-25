@@ -1,7 +1,7 @@
 // Sidor för en match och ett leg – nås genom att klicka på resultat, rader och rubriker.
 // Allt räknas ur vyerna (v_x01, v_resultat) och rundorna/pilarna – inget lagras.
-import { api, rpc, esc, fmt, proc, tid, datum, spelarLank, legLank, matchLank, turneringLank } from './lib.js?v=0.9.2';
-import { TYPER, setLage, ovningSumma, sdtText } from './spel.js?v=0.9.2';
+import { api, rpc, fraga, varna, jag, esc, fmt, proc, tid, datum, spelarLank, legLank, matchLank, turneringLank } from './lib.js?v=0.10.0';
+import { TYPER, setLage, ovningSumma, sdtText, CATCH_MAL, catchPoang } from './spel.js?v=0.10.0';
 
 const hamtaRader = (filter) => Promise.all([
   api(`v_x01?${filter}&select=spel_id,spelare_id,namn,start,match_id,startpoang,vinnare,mot,poang,pilar,snitt,snitt_forsta9,pilar_dubbel,checkouts,utgang,plus100,plus140,maxar`),
@@ -18,7 +18,7 @@ async function turneringFor(tm) {
 }
 
 const typNamn = (typ, inst) => (typ === 'x01' ? `X01 ${inst?.start ?? ''}` : typ === 'scoring' ? `${TYPER.scoring.namn} ${inst?.mal === '25' ? 'bull' : esc(inst?.mal ?? '')}` : esc(TYPER[typ]?.namn ?? typ));
-const resultatText = (r) => (r.typ === 'x01' ? `snitt ${fmt(r.snitt, 1)}` : r.typ === 'cricket' ? `MPR ${fmt(r.mpr, 2)}` : r.typ === 'dubbelrunda' ? `${r.traffar} träff` : `${r.poang} p`);
+const resultatText = (r) => (r.typ === 'x01' ? `snitt ${fmt(r.snitt, 1)}` : r.typ === 'cricket' ? `MPR ${fmt(r.mpr, 2)}` : r.typ === 'dubbelrunda' ? `${r.traffar} träff` : r.typ === 'catch40' ? `${r.poang} p · ${r.traffar}/${r.rundor} ut` : `${r.poang} p`);
 const ingenAtkomst = (vad) => `<div class="card"><h1>${vad} finns inte</h1><p class="muted">Eller så var du inte med i den.</p><a class="btn" href="#/historik">Historik</a></div>`;
 
 // ------------------------------------------------------------ match
@@ -70,8 +70,8 @@ export async function renderLeg(el, alla, sid) {
   const typ = spel.typ, inst = spel.installningar ?? {};
   const [t, rundor, pilar, legsIMatch] = await Promise.all([
     turneringFor(spel.turnering_match),
-    typ === 'x01' ? api(`runda?spel_id=eq.${sid}&select=spelare_id,nr,poang,pilar,pilar_dubbel,checkout&order=nr`) : [],
-    typ === 'x01' ? [] : api(`pil?spel_id=eq.${sid}&select=spelare_id,runda,nr,mal,segment&order=runda,nr`),
+    typ === 'x01' || typ === 'catch40' ? api(`runda?spel_id=eq.${sid}&select=spelare_id,nr,poang,pilar,pilar_dubbel,checkout&order=nr`) : [],
+    typ === 'x01' || typ === 'catch40' ? [] : api(`pil?spel_id=eq.${sid}&select=spelare_id,runda,nr,mal,segment&order=runda,nr`),
     spel.match_id ? api(`spel?match_id=eq.${spel.match_id}&slut=not.is.null&select=id,start&order=start`) : [],
   ]);
   const ordning = rader.map((r) => r.spelare_id);
@@ -95,6 +95,16 @@ export async function renderLeg(el, alla, sid) {
         return `<td class="${r.poang >= 100 ? 'hog' : ''}${r.checkout ? ' ut' : ''}">${r.poang}</td><td class="muted">${kvar[id]}</td>`; }).join('')}</tr>`);
     }
     protokoll = antal ? `<h2>Besök</h2><div class="tabellruta"><table class="tabell protokoll"><tr><th></th>${ordning.map((id) => `<th colspan="2">${esc(namn(id))}</th>`).join('')}</tr>${rad.join('')}</table></div>` : '';
+  } else if (typ === 'catch40') {
+    stat = `<table class="tabell"><tr><th></th><th>Poäng</th><th>Ut</th><th>Pilar</th></tr>
+      ${rader.map((r) => `<tr><td>${spelarLank(r.spelare_id, r.namn)}</td><td>${r.poang}</td><td>${r.traffar}/${r.rundor}</td><td>${r.pilar}</td></tr>`).join('')}</table>`;
+    const antal = Math.max(0, ...rundor.map((r) => r.nr));
+    const rad = [];
+    for (let n = 1; n <= antal; n++) {
+      rad.push(`<tr><td class="nr">${CATCH_MAL[n - 1]}</td>${ordning.map((id) => { const r = rundor.find((x) => x.spelare_id === id && x.nr === n);
+        return r ? `<td class="${r.checkout ? 'ut' : 'muted'}">${r.checkout ? `${r.pilar} pilar · ${catchPoang(r.pilar, true)} p` : 'inte ut'}</td>` : '<td></td>'; }).join('')}</tr>`);
+    }
+    protokoll = antal ? `<h2>Utgångar</h2><div class="tabellruta"><table class="tabell protokoll"><tr><th></th>${ordning.map((id) => `<th>${esc(namn(id))}</th>`).join('')}</tr>${rad.join('')}</table></div>` : '';
   } else {
     stat = `<table class="tabell"><tr><th></th><th>Resultat</th><th>Pilar</th></tr>
       ${rader.map((r) => `<tr><td>${spelarLank(r.spelare_id, r.namn)}</td><td>${resultatText(r)}</td><td>${r.pilar}</td></tr>`).join('')}</table>
@@ -117,9 +127,9 @@ export async function renderLeg(el, alla, sid) {
     ${iMatch ? `<p class="rad legnav">${legNr > 1 ? legLank(legsIMatch[legNr - 2].id, '← Leg ' + (legNr - 1)) : '<span></span>'}${legNr < legsIMatch.length ? legLank(legsIMatch[legNr].id, 'Leg ' + (legNr + 1) + ' →') : ''}</p>` : ''}
   </div>
   ${protokoll ? `<div class="card">${protokoll}</div>` : ''}
-  <div class="card"><button class="btn liten fara" id="tabort" type="button">Ta bort spelet</button> <span class="forklaring">För alla spelare.</span></div>`;
-  el.querySelector('#tabort').onclick = async () => {
-    if (!confirm('Ta bort spelet för alla spelare? Det går inte att ångra.')) return;
-    try { await rpc('ta_bort_spel', { sid }); location.hash = '#/historik'; } catch (e) { alert(`Kunde inte ta bort: ${e.message}`); }
+  ${rader.some((r) => r.spelare_id === jag(alla)?.id) ? '<div class="card"><button class="btn liten fara" id="tabort" type="button">Ta bort spelet</button> <span class="forklaring">För alla spelare.</span></div>' : ''}`;
+  if (el.querySelector('#tabort')) el.querySelector('#tabort').onclick = async () => {
+    if (!(await fraga('Ta bort spelet för alla spelare? Det går inte att ångra.', { ok: 'Ta bort', fara: true }))) return;
+    try { await rpc('ta_bort_spel', { sid }); location.hash = '#/historik'; } catch (e) { varna(`Kunde inte ta bort: ${e.message}`); }
   };
 }

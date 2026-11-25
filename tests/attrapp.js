@@ -1,6 +1,6 @@
 // Attrapp för Supabase (PostgREST + auth) i minnet – testerna rör aldrig riktiga databasen.
 // Ersätter window.fetch innan appen laddas. Påhittade spelare. Vyerna räknas med samma regler som i SQL.
-import { ovningSumma, traff, mult, nummer } from '../spel.js?v=0.9.2';
+import { ovningSumma, traff, mult, nummer, catchSumma } from '../spel.js?v=0.10.0';
 
 export const KOD = 'kod123';
 export const EPOST = 'anna@exempel.se';
@@ -31,7 +31,8 @@ const farAndra = (sid) => {
 };
 
 // Samma regel som dart.ser_spel: spel man skapat eller är med i
-const syns = (s) => s.skapad_av === db.inloggad || s.spelare.some((x) => db.spelare.find((p) => p.id === x.spelare_id)?.anvandare === db.inloggad);
+const arAdminA = () => Object.values(KONTON).find((x) => x.sub === db.inloggad)?.admin === true;
+const syns = (s) => arAdminA() || s.skapad_av === db.inloggad || s.spelare.some((x) => db.spelare.find((p) => p.id === x.spelare_id)?.anvandare === db.inloggad);
 const jagId = () => db.spelare.find((p) => p.anvandare === db.inloggad)?.id;
 const iTurnering = (tid) => db.turnering_deltagare.some((d) => d.turnering_id === tid && d.spelare_id === jagId());
 const synligaTurneringar = () => db.turnering.filter((t) => iTurnering(t.id));
@@ -54,6 +55,11 @@ const v = {
   },
   resultat() {
     return synliga().filter((s) => s.typ !== 'x01').flatMap((s) => s.spelare.map((sp) => {
+      if (s.typ === 'catch40') {
+        const cs = catchSumma(s.rundor.filter((x) => x.spelare_id === sp.spelare_id));
+        return { spel_id: s.id, spelare_id: sp.spelare_id, namn: v.spelnamn(sp.spelare_id), typ: s.typ, start: s.start, slut: s.slut, match_id: s.match_id, kalla: s.kalla ?? 'app',
+          installningar: s.installningar, vinnare: sp.vinnare, pilar: cs.pilar, singlar: 0, dubblar: 0, tripplar: 0, traffar: cs.utgangar, marks: 0, rundor: cs.rundor, poang: cs.poang, mpr: null };
+      }
       const pil = s.pilar.filter((x) => x.spelare_id === sp.spelare_id), sm = ovningSumma(s.typ, pil);
       const rundor = new Set(pil.map((x) => x.runda)).size + (sp.resultat?.rundor ?? 0);
       const cm = pil.filter((x) => [15, 16, 17, 18, 19, 20, 25].includes(nummer(x.segment))).reduce((a, x) => a + mult(x.segment), 0) + (sp.resultat?.marks ?? 0);

@@ -1,13 +1,13 @@
 // Router, inloggning, spelarlistan och offlinekön.
-import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.9.2';
-import { renderStart, renderSpel } from './spela.js?v=0.9.2';
-import { renderHistorik } from './historik.js?v=0.9.2';
-import { renderStatistik } from './statistik.js?v=0.9.2';
-import { renderJag } from './jag.js?v=0.9.2';
-import { renderNyheter, markeraOsedda } from './nyheter.js?v=0.9.2';
-import { renderHem } from './hem.js?v=0.9.2';
-import { renderTurneringar, renderTurnering, renderNyTurnering } from './turnering.js?v=0.9.2';
-import { renderMatch, renderLeg } from './sidor.js?v=0.9.2';
+import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.10.0';
+import { renderStart, renderSpel, stangFardigt } from './spela.js?v=0.10.0';
+import { renderHistorik } from './historik.js?v=0.10.0';
+import { renderStatistik } from './statistik.js?v=0.10.0';
+import { renderJag } from './jag.js?v=0.10.0';
+import { renderNyheter, markeraOsedda } from './nyheter.js?v=0.10.0';
+import { renderHem } from './hem.js?v=0.10.0';
+import { renderTurneringar, renderTurnering, renderNyTurnering } from './turnering.js?v=0.10.0';
+import { renderMatch, renderLeg } from './sidor.js?v=0.10.0';
 
 const app = document.getElementById('app');
 
@@ -34,7 +34,7 @@ async function route() {
   document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('active', a.dataset.route === flik));
   document.getElementById('loggaut').hidden = !isLoggedIn();
   visaKo();
-  if (vy !== 'spel') document.body.classList.remove('spelar');
+  if (vy !== 'spel') { document.body.classList.remove('spelar'); stangFardigt(); }
   if (vy === 'loggaut') { logout(); location.hash = '#/'; return; }
   if (vy === 'nyheter') {   // går att läsa även utan inloggning
     try { return await renderNyheter(app); } catch { app.innerHTML = '<div class="card fel"><h2>Inget nät</h2><p>Nyheterna kräver nät.</p></div>'; return; }

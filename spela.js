@@ -1,16 +1,17 @@
 // Starta och spela: X01, cricket och övningar. Pågående spel sparas lokalt efter varje kast,
 // färdiga legs/övningar läggs i offlinekön och skickas med spara_spel.
-import { esc, fmt, proc, minns, uuid, write, rpc, api, laggIKo, skickaKo, tid, jag, val } from './lib.js?v=0.9.2';
+import { esc, fmt, proc, minns, fraga as fragaRuta, uuid, write, rpc, api, laggIKo, skickaKo, ko, tid, jag, val } from './lib.js?v=0.10.0';
 import {
   TYPER, besok, fragaDubbel, utgang, kanGaUt, x01Snitt, plan, knappar, ovningSumma, ovningSlut,
-  cricketLage, CRICKET, marksText, segText, malText, traff, sdtText,
-} from './spel.js?v=0.9.2';
+  cricketLage, CRICKET, marksText, segText, malText, traff, sdtText, CATCH_MAL, catchPoang, catchSumma,
+} from './spel.js?v=0.10.0';
 
 let app = null;
 let inmatning = '';      // X01: siffror som skrivits in
 let fraga = null;        // X01: fråga om utgång/dubbelpilar efter ett besök
 let tangent = null;      // aktiv tangentbordshanterare
 let meddelande = '';
+let visaGaster = false;  // startsidan: gästerna syns först när man trycker på Gäst (Henrik 2026-11-25)
 document.addEventListener('keydown', (e) => { if (tangent && !e.target.closest?.('input, textarea, select')) tangent(e); });
 
 // Spel på distans: varje ändring skickas till live_match och motspelarens ändringar hämtas (se Distans nedan)
@@ -34,6 +35,9 @@ export function renderStart(el, alla, typFranLank) {
   const namnPa = (ids) => ids.map((id) => alla.find((s) => s.id === id)?.namn ?? '?').join(', ');
 
   const inst = val.inst[val.typ] ?? {};
+  const chip = (s) => { const i = val.spelare.indexOf(s.id);
+    return `<button type="button" class="chip${i >= 0 ? ' vald' : ''}" data-spelare="${s.id}">${i >= 0 ? `<b>${i + 1}</b> ` : ''}${esc(s.namn)}${s.anvandare ? '' : ' <span class="gast">gäst</span>'}</button>`; };
+  const gaster = aktiva.filter((s) => !s.anvandare && !val.spelare.includes(s.id));
   const radio = (namn, alt, varde) => `<div class="val" data-inst="${namn}">${alt.map(([v, t]) =>
     `<button type="button" class="chip${String(v) === String(varde) ? ' vald' : ''}" data-v="${v}">${t}</button>`).join('')}</div>`;
   let installningar = '';
@@ -42,13 +46,15 @@ export function renderStart(el, alla, typFranLank) {
   if (val.typ === 'cricket') installningar = `<h3>Först till</h3>${radio('forst_till', [[1, '1 leg'], [2, '2 legs'], [3, '3 legs']], inst.forst_till ?? 1)}`;
   if (val.typ === 'scoring') installningar = `<h3>Mål</h3>${radio('mal', [...Array.from({ length: 20 }, (_, i) => [20 - i, String(20 - i)]), [25, 'Bull']], inst.mal ?? 20)}
       <h3>Antal pilar</h3>${radio('pilar', [[30, '30'], [60, '60'], [99, '99'], [100, '100']], inst.pilar ?? 100)}`;
+  if (val.typ === 'bobs27') installningar = `<h3>Under noll</h3>${radio('minus', [[1, 'Fortsätt på minus'], [0, 'Slut vid 0']], inst.minus ?? 1)}`;
   const beskr = {
     x01: 'Besöket skrivs in som summa. Dubbel ut. Nära utgång frågar appen hur många pilar som kastades på dubbel.',
     cricket: '15–20 och bull. Stäng med tre träffar, ta poäng på det som motståndaren inte stängt. MPR = marks per runda.',
-    bobs27: 'Börja på 27. Tre pilar på varje dubbel D1–D20 och bull: träff ger dubbelns värde, alla miss drar av det. Slut vid 0.',
+    bobs27: 'Börja på 27. Tre pilar på varje dubbel D1–D20 och bull: träff ger dubbelns värde, alla miss drar av det. Välj om det tar slut vid 0 eller om man fortsätter på minus.',
     dubbelrunda: 'Tre pilar på varje dubbel D1–D20 och bull. Träffprocent per dubbel.',
     jdc: '10–15 (3 pilar, shanghai +100), en pil per dubbel D1–D20 och bull (50 per träff), sedan 15–20.',
     scoring: 'Pilar mot ett mål. Singel, dubbel, trippel eller miss för varje pil.',
+    catch40: 'Utgångarna 61–100, högst 6 pilar på varje. Ut på 2 pilar ger 3 p, på 3 pilar 2 p och på 4–6 pilar 1 p. Högst 120 p.',
   }[val.typ];
 
   el.innerHTML = `
@@ -60,10 +66,11 @@ export function renderStart(el, alla, typFranLank) {
       <div class="val typval">${Object.entries(TYPER).map(([k, t]) => `<button type="button" class="chip${k === val.typ ? ' vald' : ''}" data-typ="${k}">${esc(t.namn)}</button>`).join('')}</div>
       <p class="muted">${esc(beskr)}</p>
       <h3>Spelare <span class="muted liten">i kastordning</span></h3>
-      <div class="val" id="spelarval">${aktiva.map((s) => { const i = val.spelare.indexOf(s.id);
-        return `<button type="button" class="chip${i >= 0 ? ' vald' : ''}" data-spelare="${s.id}">${i >= 0 ? `<b>${i + 1}</b> ` : ''}${esc(s.namn)}${s.anvandare ? '' : ' <span class="gast">gäst</span>'}</button>`; }).join('')}</div>
-      <p class="forklaring">Spelare med eget konto ser spelet i sin statistik. Gäster är bara namn.</p>
+      <div class="val" id="spelarval">${aktiva.filter((s) => s.anvandare || val.spelare.includes(s.id)).map(chip).join('')}
+        <button type="button" class="chip gastknapp${visaGaster ? ' vald' : ''}" id="gaster" aria-expanded="${visaGaster}">${visaGaster ? '− Gäst' : '+ Gäst'}</button></div>
+      ${visaGaster ? `${gaster.length ? `<div class="val" id="gastval">${gaster.map(chip).join('')}</div>` : ''}
       <form id="nyspelare" class="rad"><input name="namn" placeholder="Ny gäst" maxlength="40" autocomplete="off"><button class="btn" type="submit">Lägg till</button></form>
+      <p class="forklaring">Gäster är bara namn – spelare med eget konto ser spelet i sin statistik.</p>` : ''}
       ${installningar}
       <p class="msg" id="startmsg">${esc(meddelande)}</p>
       <button class="btn primar stor" id="starta" type="button"${val.spelare.length ? '' : ' disabled'}>Starta</button>
@@ -81,7 +88,8 @@ export function renderStart(el, alla, typFranLank) {
     val.inst[val.typ] = { ...(val.inst[val.typ] ?? {}), [g.dataset.inst]: Number(b.dataset.v) };
     spara();
   }));
-  el.querySelector('#nyspelare').onsubmit = async (e) => {
+  el.querySelector('#gaster').onclick = () => { visaGaster = !visaGaster; renderStart(el, alla); };
+  if (el.querySelector('#nyspelare')) el.querySelector('#nyspelare').onsubmit = async (e) => {
     e.preventDefault();
     const namn = e.target.namn.value.trim();
     if (!namn) return;
@@ -92,15 +100,16 @@ export function renderStart(el, alla, typFranLank) {
       el.querySelector('#startmsg').textContent = err.code === '23505' ? 'Det namnet finns redan.' : 'Ny spelare kräver nät.';
     }
   };
-  el.querySelector('#slangpag')?.addEventListener('click', () => {
-    if (confirm('Avbryta det pågående spelet? Det som inte är färdigspelat sparas inte.')) { pagaende(null); renderStart(el, alla); }
+  el.querySelector('#slangpag')?.addEventListener('click', async () => {
+    if (await fragaRuta('Avbryta det pågående spelet? Det som inte är färdigspelat sparas inte.', { ok: 'Avbryt spelet', avbryt: 'Behåll', fara: true })) { pagaende(null); renderStart(el, alla); }
   });
-  el.querySelector('#starta').onclick = () => {
-    if (p && !confirm('Det finns ett pågående spel. Avbryta det och starta ett nytt?')) return;
+  el.querySelector('#starta').onclick = async () => {
+    if (p && !(await fragaRuta('Det finns ett pågående spel. Avbryta det och starta ett nytt?', { ok: 'Starta nytt', avbryt: 'Behåll', fara: true }))) return;
     const i = val.inst[val.typ] ?? {};
     const installningar = val.typ === 'x01' ? { start: i.start ?? 501, forst_till: i.forst_till ?? 1 }
       : val.typ === 'cricket' ? { forst_till: i.forst_till ?? 1 }
-        : val.typ === 'scoring' ? { mal: String(i.mal ?? 20), pilar: i.pilar ?? 100 } : {};
+        : val.typ === 'scoring' ? { mal: String(i.mal ?? 20), pilar: i.pilar ?? 100 }
+          : val.typ === 'bobs27' ? { minus: (i.minus ?? 1) === 1 } : {};
     nyttSpel(val.typ, installningar, val.spelare, Object.fromEntries(alla.map((s) => [s.id, s.namn])));
     location.hash = '#/spel';
   };
@@ -207,6 +216,7 @@ export function renderSpel(el) {
   if (s.distans) startaSynk();
   if (s.typ === 'x01') x01Vy(s);
   else if (s.typ === 'cricket') cricketVy(s);
+  else if (s.typ === 'catch40') catchVy(s);
   else ovningVy(s);
   // Pågående spel fyller skärmen utan scroll (Henrik 2026-11-22); resultatsidan scrollar som vanligt
   document.body.classList.toggle('spelar', !pagaende()?.klar);
@@ -223,10 +233,10 @@ const legInfo = (s) => [s.turnering ? esc(s.turnering.namn) + (s.turnering.omgan
 const avbrytKnapp = `<button class="btn liten" id="avbryt" type="button">Avbryt</button>`;
 const huvudKnappar = (kanAngra) => `<span class="huvudknappar"><button class="btn liten" id="angra" type="button"${kanAngra ? '' : ' disabled'}>Ångra</button>${avbrytKnapp}</span>`;
 function kopplaAvbryt() {
-  app.querySelector('#avbryt')?.addEventListener('click', () => {
+  app.querySelector('#avbryt')?.addEventListener('click', async () => {
     const s = minns('pagaende');
-    if (!confirm(s?.distans ? 'Avbryta matchen för er båda? Det pågående leget sparas inte, färdiga legs finns kvar.'
-      : 'Avbryta spelet? Det pågående leget/övningen sparas inte.')) return;
+    if (!(await fragaRuta(s?.distans ? 'Avbryta matchen för er båda? Det pågående leget sparas inte, färdiga legs finns kvar.'
+      : 'Avbryta spelet? Det pågående leget/övningen sparas inte.', { ok: 'Avbryt spelet', avbryt: 'Fortsätt spela', fara: true }))) return;
     avslutaDistans(s);
     pagaende(null); tangent = null; location.hash = s?.turnering ? `#/turnering/${s.turnering.id}` : '#/';
   });
@@ -258,20 +268,33 @@ function nastaLeg(s) {
 }
 function igen(s) { nyttSpel(s.typ, s.inst, s.spelare, s.namn); }
 
+// Är spelet helt färdigt (inte bara ett leg i en match)? Då sparas det och kan stängas.
+const fardigt = (s) => !!s?.klar && (s.klar.match || s.klar.ovning);
+// Ett färdigt spel ligger inte kvar som pågående när man går till en annan sida (Henrik 2026-11-25).
+// Det är redan sparat (offlinekön) när det blev klart – det här stänger det bara.
+export function stangFardigt() {
+  const s = minns('pagaende');
+  if (fardigt(s)) { avslutaDistans(s); pagaende(null); }
+}
+// Raden som visar att omgången är sparad – uppdateras när offlinekön har skickats
+const sparatText = (id) => (ko().some((x) => x.id === id) ? '✓ Sparat på telefonen – skickas när nätet finns' : '✓ Sparat i historiken');
+window.addEventListener('dart-ko', () => { const e = document.getElementById('sparat'); if (e) e.textContent = sparatText(e.dataset.id); });
+
 function slutKnappar(s, angraText, kanAngra = true) {
   const match = !s.klar || s.klar.match || s.klar.ovning;
-  if (s.turnering && match) return `<p class="rad">
-    <a class="btn primar" href="#/turnering/${s.turnering.id}" id="tillstart">Till ${esc(s.turnering.namn)}</a>
+  const sparat = `<p class="sparat" id="sparat" data-id="${s.leg.id}">${sparatText(s.leg.id)}</p>`;
+  if (s.turnering && match) return `${sparat}<p class="rad">
+    <a class="btn primar" href="#/turnering/${s.turnering.id}" id="tillstart">Spara och avsluta</a>
     <button class="btn" id="angra" type="button"${kanAngra ? '' : ' disabled'}>${angraText}</button></p>`;
-  return `<p class="rad">
-    ${match ? '<button class="btn primar" id="igen" type="button">Spela igen</button>' : `<button class="btn primar" id="nasta" type="button">${s.klar.set ? 'Nästa set' : 'Nästa leg'}</button>`}
-    <button class="btn" id="angra" type="button"${kanAngra ? '' : ' disabled'}>${angraText}</button>
-    ${match ? '<a class="btn" href="#/" id="tillstart">Till start</a>' : ''}</p>`;
+  return `${sparat}<p class="rad">
+    ${match ? '<a class="btn primar" href="#/" id="tillstart">Spara och avsluta</a><button class="btn" id="igen" type="button">Spela igen</button>'
+    : `<button class="btn primar" id="nasta" type="button">${s.klar.set ? 'Nästa set' : 'Nästa leg'}</button>`}
+    <button class="btn" id="angra" type="button"${kanAngra ? '' : ' disabled'}>${angraText}</button></p>`;
 }
 function kopplaSlut(s, angra) {
   app.querySelector('#nasta')?.addEventListener('click', () => { nastaLeg(s); pagaende(s); rita(); });
   app.querySelector('#igen')?.addEventListener('click', () => { igen(s); rita(); });
-  app.querySelector('#tillstart')?.addEventListener('click', () => { avslutaDistans(s); pagaende(null); });
+  app.querySelector('#tillstart')?.addEventListener('click', () => { skickaKo(); avslutaDistans(s); pagaende(null); });
   app.querySelector('#angra')?.addEventListener('click', () => {
     if (s.klar.fore) { s.vunna = s.klar.fore.vunna; s.setVunna = s.klar.fore.setVunna; }
     else if (s.klar.vinnare !== undefined && s.klar.vinnare !== null) s.vunna[s.klar.vinnare]--;
@@ -439,7 +462,7 @@ export function ovningLage(s) {
     while (r < pl.length && k >= pl[r].length) { k -= pl[r].length; r++; }
     const summa = ovningSumma(s.typ, mina);
     // färdiga rundor räknas för Bob's 27-slut: bara när rundan är klar (k === 0)
-    const klar = r >= pl.length || (k === 0 && r > 0 && ovningSlut(s.typ, summa));
+    const klar = r >= pl.length || (k === 0 && r > 0 && ovningSlut(s.typ, summa, s.inst));
     return [id, { mina, runda: r, iRundan: k, summa, klar }];
   }));
   const kvar = ord.filter((id) => !per.get(id).klar);
@@ -495,4 +518,67 @@ function ovningVy(s) {
     pagaende(s); rita();
   });
   app.querySelector('#angra').onclick = () => { s.leg.pilar.pop(); pagaende(s); rita(); };
+}
+
+// ------------------------------------------------------------ Catch 40 (en rad i runda per utgång)
+export function catchLage(s) {
+  const per = new Map(s.spelare.map((id) => {
+    const mina = s.leg.rundor.filter((x) => x.spelare_id === id);
+    return [id, { mina, summa: catchSumma(mina), klar: mina.length >= CATCH_MAL.length }];
+  }));
+  const kvar = s.spelare.filter((id) => !per.get(id).klar);
+  const tur = kvar.length ? kvar.reduce((a, id) => (per.get(id).mina.length < per.get(a).mina.length ? id : a), kvar[0]) : null;
+  return { per, tur };
+}
+
+function catchVy(s) {
+  const { per, tur } = catchLage(s);
+  const resultatText = (sm) => `${sm.poang} p · ${sm.utgangar}/${sm.rundor} ut`;
+
+  if (s.klar || tur === null) {
+    tangent = null;
+    if (!s.klar) {
+      const topp = Math.max(...s.spelare.map((id) => per.get(id).summa.poang));
+      s.klar = { ovning: true, vinnare: null };
+      sparaLeg(s, s.spelare.map((id, i) => ({ spelare_id: id, ordning: i + 1, vinnare: s.spelare.length > 1 && per.get(id).summa.poang === topp, resultat: null })));
+      pagaende(s);
+    }
+    const rutor = (id) => per.get(id).mina.map((x) => `<span class="malcell${x.checkout ? ' traff' : ''}" title="${x.checkout ? `ut på ${x.pilar} pilar` : 'inte ut'}">${CATCH_MAL[x.nr - 1]}<small>${catchPoang(x.pilar, x.checkout)} p</small></span>`).join('');
+    app.innerHTML = `<div class="card"><h1>Catch 40</h1>
+      ${s.spelare.map((id) => { const sm = per.get(id).summa;
+        return `<div class="resultat"><h2>${N(s, id)}: ${resultatText(sm)}</h2>
+        <p class="muted">${sm.utgangar ? `${fmt(sm.pilarUt / sm.utgangar, 1)} pilar per utgång` : 'Ingen utgång'} · ${sm.pilar} pilar</p>
+        <div class="malrutor">${rutor(id)}</div></div>`; }).join('')}
+      ${slutKnappar(s, 'Ångra sista utgången')}</div>`;
+    return kopplaSlut(s, (x) => x.leg.rundor.pop());
+  }
+
+  const mig = per.get(tur), nr = mig.mina.length + 1, mal = CATCH_MAL[nr - 1];
+  const forslag = val('forslag') ? utgang(mal) : null;
+  const knapp = (n) => (n
+    ? `<button class="btn stor traffknapp" data-catch="${n}" type="button"${utgang(mal, Math.min(n, 3)) ? '' : ' disabled'}><span>${n}</span><small>pilar · ${catchPoang(n, true)} p</small></button>`
+    : '<button class="btn stor miss" data-catch="0" type="button"><span class="inteut">Inte ut</span><small>0 p</small></button>');
+  app.innerHTML = `<div class="spelyta">
+    <div class="spelhuvud"><span>Catch 40</span>${huvudKnappar(s.leg.rundor.length)}</div>
+    ${s.spelare.length > 1 ? `<div class="tavla">${s.spelare.map((id) => `<div class="spelarkort liten${id === tur ? ' tur' : ''}"><div class="namn">${N(s, id)}</div><div class="liten">${resultatText(per.get(id).summa)}</div></div>`).join('')}</div>` : ''}
+    <div class="malvy">
+      <div class="liten muted">Utgång ${nr} av ${CATCH_MAL.length}${s.spelare.length > 1 ? ` · ${N(s, tur)}` : ''}</div>
+      <div class="mal">${mal}</div>
+      <div class="summa">${mig.summa.poang} poäng · ${mig.summa.utgangar} ut</div>
+      ${forslag ? `<div class="forslag">${forslag.map(segText).join(' ')}</div>` : ''}
+    </div>
+    <p class="tur-text">Hur många pilar gick åt?</p>
+    <div class="knappar tre catchknappar">${[2, 3, 4, 5, 6, 0].map(knapp).join('')}</div>
+  </div>`;
+  kopplaAvbryt();
+  const registrera = (n) => {
+    s.leg.rundor.push({ spelare_id: tur, nr, poang: n ? mal : 0, pilar: n || 6, pilar_dubbel: 0, checkout: n > 0 });
+    pagaende(s); rita();
+  };
+  app.querySelectorAll('[data-catch]').forEach((b) => b.onclick = () => registrera(Number(b.dataset.catch)));
+  app.querySelector('#angra').onclick = () => { s.leg.rundor.pop(); pagaende(s); rita(); };
+  tangent = (e) => {
+    const b = app.querySelector(`[data-catch="${e.key}"]`);
+    if (b && !b.disabled) { e.preventDefault(); b.click(); }
+  };
 }

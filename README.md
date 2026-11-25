@@ -9,8 +9,9 @@ Egen träningsapp för dart som ersätter My Dart Training, med synk mellan tele
 ## Spel i v0.1
 - **X01** 301/501, dubbel ut, besöket skrivs in som summa. Nära utgång frågar appen hur många pilar som gick på dubbel och med vilken pil man gick ut. Utgångsförslag. Först till 1–5 legs, en eller flera spelare.
 - **Cricket** 15–20 och bull, pil för pil, solo eller flera spelare. MPR.
-- **Bob's 27**, **Runt dubblarna** (3 pilar per dubbel), **JDC Challenge**
+- **Bob's 27** (valfritt att fortsätta på minus), **Runt dubblarna** (3 pilar per dubbel), **JDC Challenge**
 - **Pilar mot ett mål** – 30–100 pilar mot valfritt mål, singel/dubbel/trippel/miss per pil
+- **Catch 40** (v0.10) – utgångarna 61–100, högst 6 pilar på varje; ut på 2 pilar ger 3 p, 3 pilar 2 p, 4–6 pilar 1 p
 - **Turneringar** (v0.5) – serie eller utslag i X01 eller cricket, tabell, matcher i valfri ordning och samtidigt
 - **Tävlingar från klubben** (v0.7) – i X01-statistiken syns ens tävlingar från klubbappen för Bankeryds dartklubb bredvid träningen: egna nyckeltal, rosa punkter i grafen (snitt per tävlingskväll), tävlingslista med länk till varje tävling och distriktsserien. Läses direkt i klubbappen med dess inloggning – inget kopieras
 - **Klicka dig vidare** (v0.9) – namn, resultat, rader och turneringar är länkar till spelare (`#/spelare/<id>`), match (`#/match/<id>`), leg (`#/leg/<id>`) och turnering

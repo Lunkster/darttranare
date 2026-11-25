@@ -92,6 +92,13 @@ input, select { font: inherit; color: var(--text); background: var(--bg); border
 .knappar .btn.stor { min-height: 96px; font-size: 26px; }
 .traffknapp { background: var(--gron); border-color: var(--gron); color: #fff; }
 .miss { background: var(--kort-2); color: var(--text-2); }
+/* Catch 40: antal pilar och poängen under */
+.catchknappar .btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; line-height: 1.1; }
+.catchknappar .btn small { font-size: 15px; font-weight: 600; opacity: .85; white-space: nowrap; }
+.catchknappar .btn span { font-size: clamp(26px, 5.5dvh, 44px); font-weight: 800; }
+.catchknappar .btn span.inteut { font-size: clamp(18px, 3.4dvh, 26px); white-space: nowrap; }
+.catchknappar .btn:disabled { opacity: .35; }
+.sparat { color: var(--gron-2); font-weight: 600; margin: 10px 0 0; }
 .fraga { text-align: center; font-size: 20px; font-weight: 700; margin: 4px 0; }
 .malvy { text-align: center; background: var(--kort); border-radius: var(--radie); padding: 10px; }
 .malvy .mal { font-size: 64px; font-weight: 800; line-height: 1.1; color: var(--rod-2); }
@@ -204,6 +211,14 @@ body.spelar .rundpilar .pil { padding: 0 8px; min-width: 44px; display: inline-b
 /* Övningar och frågor: knapparna längst ner med rimlig höjd, målet tar resten */
 body.spelar .spelyta > .knappar:not(.knappsats):not(.cricketknappar) { flex: 0 1 clamp(110px, 36dvh, 340px); margin-top: auto; }
 body.spelar .malvy { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
+/* Stort mål och stor text runt det när man tränar (Henrik 2026-11-25): målet ~2,5 gånger, texten ~3 gånger större.
+   Begränsat av skärmens höjd och bredd så att inget scrollar eller klipps. */
+body.spelar .malvy { gap: clamp(2px, 1dvh, 12px); }
+body.spelar .malvy .mal { font-size: min(24dvh, 34vw, 210px); line-height: 1; }
+body.spelar .malvy .liten { font-size: min(36px, 5dvh, 8.5vw); }
+body.spelar .malvy .summa { font-size: min(44px, 6dvh, 8vw); }
+body.spelar .malvy .sdt, body.spelar .malvy .forslag { font-size: min(36px, 5dvh, 7vw); }
+@media (orientation: landscape) { body.spelar .malvy .mal { font-size: min(30dvh, 20vw, 210px); } }
 
 /* Meny: fyra flikar och två ikoner ska få plats på en liten telefon */
 @media (max-width: 480px) { .brand { display: none; } .tabs { width: 100%; justify-content: space-between; } .tabs a { padding: 8px 7px; font-size: 14px; } .tabs a.tab-ikon { padding: 8px 6px; } }
@@ -230,6 +245,8 @@ body.spelar .malvy { flex: 1 1 auto; min-height: 0; display: flex; flex-directio
 .ruta-tecken { font-size: 30px; font-weight: 800; line-height: 1.1; margin-bottom: auto; }
 .ruta-namn { font-weight: 700; font-size: 16px; }
 .ruta-text { color: var(--text-3); font-size: 13px; }
+/* Udda antal rutor i två kolumner: den sista tar hela bredden */
+@media (max-width: 479px) { .ruta:last-child:nth-child(odd) { grid-column: 1 / -1; } }
 .senaste { padding: 10px 14px; }
 .senrad { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--linje); align-items: baseline; }
 .senrad .muted { font-size: 13px; }
@@ -310,3 +327,13 @@ a.senrad:hover, a.legrad:hover { background: color-mix(in srgb, var(--gron-2) 8%
 /* Pilar mot ett mål: singlar, dubblar, tripplar */
 .sdt { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-2); }
 .malvy .sdt { font-size: 15px; margin-top: 2px; }
+
+/* Appens egen fråga och varning (lib.js fraga) – i stället för webbläsarens ruta med webbadressen */
+dialog.appdialog { border: 1px solid var(--linje); border-radius: var(--radie); background: var(--kort); color: var(--text); padding: 18px; width: min(92vw, 400px); }
+dialog.appdialog::backdrop { background: rgba(0, 0, 0, .6); }
+.dialoghuvud { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
+.dialoghuvud img { width: 36px; height: 36px; }
+dialog.appdialog p { font-size: 17px; margin: 14px 0 18px; }
+.dialogknappar { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.dialogknappar .btn { min-height: 48px; flex: 1 1 auto; }
+.dialogknappar .btn.fara { background: var(--rod); border-color: var(--rod); color: #fff; }

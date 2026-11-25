@@ -9,6 +9,7 @@ export const TYPER = {
   dubbelrunda: { namn: 'Runt dubblarna', kort: 'Dubblar' },
   jdc: { namn: 'JDC Challenge', kort: 'JDC' },
   scoring: { namn: 'Pilar mot ett mål', kort: 'Mål' },
+  catch40: { namn: 'Catch 40', kort: 'Catch 40' },
 };
 
 export const nummer = (seg) => (seg === 'M' ? 0 : Number(seg.slice(1)));
@@ -125,8 +126,20 @@ export const sdtText = (sm, mal, kort = false) => (String(mal) === '25'
   ? `${sm.singlar} × 25 · ${sm.dubblar} × bull`
   : kort ? `S ${sm.singlar} · D ${sm.dubblar} · T ${sm.tripplar}` : `${sm.singlar} singlar · ${sm.dubblar} dubblar · ${sm.tripplar} tripplar`);
 
-// Bob's 27 tar slut när poängen når noll eller lägre
-export const ovningSlut = (typ, summa) => typ === 'bobs27' && summa.poang <= 0;
+// Bob's 27 tar slut när poängen når noll eller lägre – utom när man valt att fortsätta på minus (inst.minus)
+export const ovningSlut = (typ, summa, inst = {}) => typ === 'bobs27' && inst.minus === false && summa.poang <= 0;
+
+// ---------- Catch 40 ----------
+// Utgångarna 61–100 i tur och ordning, 6 pilar per utgång. Ut på 2 pilar = 3 p, 3 pilar = 2 p, 4–6 pilar = 1 p.
+// En rad i runda per utgång: nr = utgångens ordning (1–40), poang = utgången om man gick ut annars 0,
+// pilar = pilar som gick åt (2–6, 6 om man inte gick ut), checkout = gick ut. Samma regler som vyn dart.v_resultat.
+export const CATCH_MAL = Array.from({ length: 40 }, (_, i) => 61 + i);
+export const catchPoang = (pilar, ut) => (!ut ? 0 : pilar <= 2 ? 3 : pilar === 3 ? 2 : 1);
+export function catchSumma(rundor) {
+  const ut = rundor.filter((r) => r.checkout);
+  return { poang: rundor.reduce((a, r) => a + catchPoang(r.pilar, r.checkout), 0), utgangar: ut.length, rundor: rundor.length,
+    pilar: rundor.reduce((a, r) => a + r.pilar, 0), pilarUt: ut.reduce((a, r) => a + r.pilar, 0) };
+}
 
 // ---------- Cricket ----------
 export const CRICKET = [20, 19, 18, 17, 16, 15, 25];

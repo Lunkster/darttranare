@@ -1,11 +1,11 @@
 // Historik: spel man själv var med i (RLS), nyast först, med möjlighet att ta bort. Spel i offlinekön visas överst.
-import { api, rpc, esc, fmt, proc, tid, ko, skickaKo, spelarLank, legLank, matchLank } from './lib.js?v=0.9.2';
-import { TYPER } from './spel.js?v=0.9.2';
+import { api, rpc, fraga, varna, arAdmin, jag, esc, fmt, proc, tid, ko, skickaKo, spelarLank, legLank, matchLank } from './lib.js?v=0.10.0';
+import { TYPER } from './spel.js?v=0.10.0';
 
 export async function renderHistorik(el, alla) {
   const [x01, ovr] = await Promise.all([
     api('v_x01?select=spel_id,spelare_id,namn,start,kalla,match_id,startpoang,vinnare,mot,snitt,pilar,checkouts,pilar_dubbel&order=start.desc&limit=600'),
-    api('v_resultat?select=spel_id,spelare_id,namn,typ,start,kalla,match_id,installningar,vinnare,pilar,traffar,poang,mpr&order=start.desc&limit=600'),
+    api('v_resultat?select=spel_id,spelare_id,namn,typ,start,kalla,match_id,installningar,vinnare,pilar,traffar,rundor,poang,mpr&order=start.desc&limit=600'),
   ]);
   const spel = new Map();
   for (const r of [...x01.map((x) => ({ ...x, typ: 'x01' })), ...ovr]) {
@@ -16,12 +16,13 @@ export async function renderHistorik(el, alla) {
   // Legs per match – en match med flera legs får en länk till matchsidan
   const iMatch = new Map();
   lista.forEach((s) => { if (s.match_id) iMatch.set(s.match_id, (iMatch.get(s.match_id) ?? 0) + 1); });
-  const kon = ko();
+  const kon = ko(), mig = jag(alla)?.id;   // admin ser alla spel men tar bara bort sina egna
   const namn = (id) => alla.find((s) => s.id === id)?.namn ?? '?';
 
   const resultat = (s, r) => {
     if (s.typ === 'x01') return `snitt ${fmt(r.snitt, 1)}${r.pilar_dubbel ? ` · ut ${proc(r.checkouts, r.pilar_dubbel)}` : ''}`;
     if (s.typ === 'cricket') return `MPR ${fmt(r.mpr, 2)}`;
+    if (s.typ === 'catch40') return `${r.poang} p · ${r.traffar}/${r.rundor} ut`;
     if (s.typ === 'dubbelrunda') return `${r.traffar} träff · ${proc(r.traffar, r.pilar)}`;
     return `${r.poang} p · ${proc(r.traffar, r.pilar)}`;
   };
@@ -33,7 +34,7 @@ export async function renderHistorik(el, alla) {
   };
 
   el.innerHTML = `<div class="card"><h1>Historik</h1>
-    <p class="forklaring">Spel du själv var med i.</p>
+    <p class="forklaring">${arAdmin() ? 'Alla spel – du är admin.' : 'Spel du själv var med i.'}</p>
     ${kon.length ? `<div class="kolista"><h3>Väntar på att skickas (${kon.length})</h3>
       ${kon.map((s) => `<div class="hrad"><span class="tid">${tid(s.start)}</span> ${esc(TYPER[s.typ].namn)} – ${esc(s.spelare.map((x) => namn(x.spelare_id)).join(', '))}</div>`).join('')}
       <button class="btn liten" id="skicka" type="button">Skicka nu</button> <span id="skickamsg" class="msg"></span></div>` : ''}
@@ -43,7 +44,7 @@ export async function renderHistorik(el, alla) {
         ${iMatch.get(s.match_id) > 1 ? `<span class="hmatch">${matchLank(s.match_id, 'match')}</span>` : ''}
         <span class="hres">${s.rader.sort((a, b) => b.vinnare - a.vinnare).map((r) => `${r.vinnare && s.rader.length > 1 ? '🏆 ' : ''}${spelarLank(r.spelare_id, r.namn)} ${resultat(s, r)}`).join(' · ')}</span></summary>
       <p class="rad">${legLank(s.id, 'Visa leget')}${iMatch.get(s.match_id) > 1 ? ` · ${matchLank(s.match_id, 'Hela matchen')}` : ''}
-        <button class="btn liten fara" data-tabort="${s.id}" type="button">Ta bort spelet</button></p></details>`).join('')}
+        ${s.rader.some((r) => r.spelare_id === mig) ? `<button class="btn liten fara" data-tabort="${s.id}" type="button">Ta bort spelet</button>` : ''}</p></details>`).join('')}
   </div>`;
 
   el.querySelector('#skicka')?.addEventListener('click', async () => {
@@ -52,7 +53,7 @@ export async function renderHistorik(el, alla) {
     if (r.fel) m.textContent = `Kunde inte skicka: ${r.fel.message}`; else renderHistorik(el, alla);
   });
   el.querySelectorAll('[data-tabort]').forEach((b) => b.onclick = async () => {
-    if (!confirm('Ta bort spelet för alla spelare? Det går inte att ångra.')) return;
-    try { await rpc('ta_bort_spel', { sid: b.dataset.tabort }); renderHistorik(el, alla); } catch (e) { alert(`Kunde inte ta bort: ${e.message}`); }
+    if (!(await fraga('Ta bort spelet för alla spelare? Det går inte att ångra.', { ok: 'Ta bort', fara: true }))) return;
+    try { await rpc('ta_bort_spel', { sid: b.dataset.tabort }); renderHistorik(el, alla); } catch (e) { varna(`Kunde inte ta bort: ${e.message}`); }
   });
 }

@@ -1,8 +1,8 @@
 // Startsidan: fortsätt spel, nästa turneringsmatch, snabbstart, form och senaste spel.
-import { api, esc, fmt, jag, minns, tid } from './lib.js?v=0.9.2';
-import { TYPER } from './spel.js?v=0.9.2';
-import { hamtaTurneringar, minaMatcher, hamtaLive } from './turnering.js?v=0.9.2';
-import { gaMed } from './spela.js?v=0.9.2';
+import { api, varna, esc, fmt, jag, minns, tid } from './lib.js?v=0.10.0';
+import { TYPER } from './spel.js?v=0.10.0';
+import { hamtaTurneringar, minaMatcher, hamtaLive } from './turnering.js?v=0.10.0';
+import { gaMed } from './spela.js?v=0.10.0';
 
 const VECKODAG = ['söndag', 'måndag', 'tisdag', 'onsdag', 'torsdag', 'fredag', 'lördag'];
 const RUTOR = [
@@ -12,6 +12,7 @@ const RUTOR = [
   ['jdc', 'JDC', 'Poäng och dubblar'],
   ['dubbelrunda', 'D1–20', 'Runt dubblarna'],
   ['scoring', '◎', 'Pilar mot ett mål'],
+  ['catch40', '61–100', 'Utgångar på 6 pilar'],
 ];
 
 export async function renderHem(el, alla) {
@@ -62,7 +63,7 @@ export async function renderHem(el, alla) {
     liveEl.innerHTML = vantande.map((l) => `<button class="hemkort fortsatt" data-gamed="${l.turnering_match}" type="button">
       <span class="hk-titel">Gå med i matchen · ${esc(l.tillstand.turnering?.namn ?? '')}</span>
       <span class="hk-info">mot ${N(l.tillstand.spelare.find((id) => id !== mig.id))} · på distans</span></button>`).join('');
-    liveEl.querySelectorAll('[data-gamed]').forEach((b) => b.onclick = () => gaMed(b.dataset.gamed, mig.id).catch((e) => alert(e.message)));
+    liveEl.querySelectorAll('[data-gamed]').forEach((b) => b.onclick = () => gaMed(b.dataset.gamed, mig.id).catch((e) => varna(e.message)));
 
     const aktiva = turneringar.filter((t) => !t.klar);
     el.querySelector('#turneringar').innerHTML = aktiva.length ? `<h2 class="hemrubrik">Turneringar</h2>${aktiva.map((t) => {

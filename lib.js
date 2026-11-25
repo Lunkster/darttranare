@@ -138,3 +138,21 @@ export const datum = (d) => { d = new Date(d); return `${d.getFullYear()}-${t2(d
 export const tid = (d) => { d = new Date(d); return `${datum(d)} ${t2(d.getHours())}:${t2(d.getMinutes())}`; };
 export const uuid = () => (crypto.randomUUID ? crypto.randomUUID()
   : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)));
+
+// Egen fråga och varning i stället för webbläsarens confirm/alert, som visar webbadressen överst (Henrik 2026-11-25).
+// Svarar med ett löfte: true = OK. Esc eller Avbryt = false. Flödestestet svarar via window.testSvar.
+export function fraga(text, { ok = 'OK', avbryt = 'Avbryt', fara = false, titel = 'Darttränaren' } = {}) {
+  if (window.testSvar) return Promise.resolve(window.testSvar(text));
+  return new Promise((svar) => {
+    const d = document.createElement('dialog');
+    d.className = 'appdialog';
+    d.innerHTML = `<form method="dialog">
+      <div class="dialoghuvud"><img src="${new URL('ikon.svg?v=0.10.0', import.meta.url).href}" alt="" aria-hidden="true"><span>${esc(titel)}</span></div>
+      <p>${esc(text)}</p>
+      <div class="dialogknappar">${avbryt ? `<button class="btn" value="nej">${esc(avbryt)}</button>` : ''}<button class="btn ${fara ? 'fara' : 'primar'}" value="ja" autofocus>${esc(ok)}</button></div></form>`;
+    document.body.append(d);
+    d.addEventListener('close', () => { svar(d.returnValue === 'ja'); d.remove(); });
+    d.showModal();
+  });
+}
+export const varna = (text) => fraga(text, { avbryt: null, titel: 'Obs!' });

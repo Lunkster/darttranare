@@ -1,8 +1,8 @@
 // Turneringar: lista, skapa (bara admin), tabell eller utslagsträd, matcher att spela.
 // Matchresultat och tabell räknas i spel.js ur vyn v_turnering_leg – inget lagras.
-import { api, rpc, esc, fmt, jag, arAdmin, anvandarId, minns, uuid, datum, spelarLank, matchLank } from './lib.js?v=0.9.2';
-import { serieSchema, utslagSchema, lopandeSchema, matchlagen, turneringstabell } from './spel.js?v=0.9.2';
-import { startaTurneringsmatch, startaDistans, gaMed } from './spela.js?v=0.9.2';
+import { api, rpc, fraga, varna, esc, fmt, jag, arAdmin, anvandarId, minns, uuid, datum, spelarLank, matchLank } from './lib.js?v=0.10.0';
+import { serieSchema, utslagSchema, lopandeSchema, matchlagen, turneringstabell } from './spel.js?v=0.10.0';
+import { startaTurneringsmatch, startaDistans, gaMed } from './spela.js?v=0.10.0';
 
 const FORMAT = { serie: 'Serie', utslag: 'Utslag', lopande: 'Löpande serie' };
 const antalSet = (t) => t.installningar?.set ?? 1;
@@ -39,7 +39,7 @@ async function starta(t, m, alla, hur) {
   const namn = Object.fromEntries(alla.map((s) => [s.id, s.namn]));
   const p = minns('pagaende');
   if (p?.turnering?.match === m.id && !p.klar) { location.hash = '#/spel'; return; }
-  if (p && !p.klar && !confirm('Det finns ett pågående spel. Avbryta det och starta matchen?')) return;
+  if (p && !p.klar && !(await fraga('Det finns ett pågående spel. Avbryta det och starta matchen?', { ok: 'Starta matchen', avbryt: 'Behåll', fara: true }))) return;
   const inst = { ...(t.typ === 'x01' ? { start: t.installningar?.start ?? 501 } : {}), forst_till: t.installningar?.forst_till ?? 1, ...(antalSet(t) > 1 ? { set: antalSet(t) } : {}) };
   const turnering = { match: m.id, id: t.id, namn: t.namn, ...(t.format === 'lopande' ? { omgang: `match ${m.runda}/${t.lagen.length}` } : {}),
     vunna: m.aktuella, set: { [m.p1]: m.set1 ?? 0, [m.p2]: m.set2 ?? 0 }, spelade: m.legs1 + m.legs2 };
@@ -140,7 +140,7 @@ export async function renderTurnering(el, alla, id) {
       <p class="forklaring">Matcherna kan spelas i vilken ordning som helst och samtidigt på olika ställen.</p>
     </div>`}
     ${arAdmin() || egen ? '<div class="card"><button class="btn liten fara" id="tabort" type="button">Ta bort turneringen</button> <span class="forklaring">Spelade legs finns kvar som vanliga spel.</span></div>' : ''}`;
-  const fel = (e) => alert(e.natfel || e instanceof TypeError ? 'Spel på distans kräver nät.' : e.message);
+  const fel = (e) => varna(e.natfel || e instanceof TypeError ? 'Spel på distans kräver nät.' : e.message);
   el.querySelectorAll('[data-spela]').forEach((b) => b.onclick = () => {
     const m = t.lagen.find((x) => x.id === b.dataset.spela);
     if (!kanDistans(m)) return starta(t, m, alla, 'har');
@@ -155,8 +155,8 @@ export async function renderTurnering(el, alla, id) {
   });
   el.querySelectorAll('[data-gamed]').forEach((b) => b.onclick = () => gaMed(b.dataset.gamed, mig).catch(fel));
   el.querySelector('#tabort')?.addEventListener('click', async () => {
-    if (!confirm(`Ta bort turneringen ${t.namn}? Det går inte att ångra.`)) return;
-    try { await rpc('ta_bort_turnering', { tid: t.id }); location.hash = '#/turneringar'; } catch (e) { alert(e.message); }
+    if (!(await fraga(`Ta bort turneringen ${t.namn}? Det går inte att ångra.`, { ok: 'Ta bort', fara: true }))) return;
+    try { await rpc('ta_bort_turnering', { tid: t.id }); location.hash = '#/turneringar'; } catch (e) { varna(e.message); }
   });
 }
 

@@ -1,8 +1,8 @@
 // Statistik per spelare: X01, cricket, övningarna och träff per dubbel. Allt räknas i vyerna.
-import { api, esc, fmt, proc, minns, jag, tid } from './lib.js?v=0.9.2';
-import { linje, staplar } from './diagram.js?v=0.9.2';
-import { malText, TYPER, sdtText } from './spel.js?v=0.9.2';
-import { klubbInloggad, hamtaKlubb, klubbNycklar, klubbPunkter, klubbListor, kopplaKlubbListor, loggaInKlubb, klubbInfoKnapp, klubbInfo, kopplaKlubbInfo } from './klubb.js?v=0.9.2';
+import { api, esc, fmt, proc, minns, jag, tid, arAdmin } from './lib.js?v=0.10.0';
+import { linje, staplar } from './diagram.js?v=0.10.0';
+import { malText, TYPER, sdtText } from './spel.js?v=0.10.0';
+import { klubbInloggad, hamtaKlubb, klubbNycklar, klubbPunkter, klubbListor, kopplaKlubbListor, loggaInKlubb, klubbInfoKnapp, klubbInfo, kopplaKlubbInfo } from './klubb.js?v=0.10.0';
 
 const summa = (rader, f) => rader.reduce((a, r) => a + Number(r[f] ?? 0), 0);
 const max = (rader, f) => (rader.length ? Math.max(...rader.map((r) => Number(r[f] ?? -Infinity))) : null);
@@ -84,12 +84,16 @@ export async function renderStatistik(el, alla, spelareId = null) {
     <div class="card"><h1>Statistik</h1>
       <div class="val">${aktiva.map((s) => `<button type="button" class="chip${s.id === vald ? ' vald' : ''}" data-spelare="${s.id}">${esc(s.namn)}</button>`).join('')}</div>
       ${aktiva.some((s) => s.id === vald) ? '' : `<p class="vald-gast"><b>${esc(spelaren?.namn ?? '?')}</b>${spelaren?.anvandare ? '' : ' <span class="gast">gäst</span>'}</p>`}
-      ${vald !== jag(alla)?.id ? '<p class="forklaring">Visar bara spel där du själv var med.</p>' : ''}
+      ${vald !== jag(alla)?.id && !arAdmin() ? '<p class="forklaring">Visar bara spel där du själv var med.</p>' : ''}
     </div>
     <section class="card" id="x01kort"><h2>X01</h2>${x01html}</section>
     <section class="card"><h2>Cricket</h2>${crhtml}</section>
     ${ovning('bobs27', "Bob's 27")}
     ${ovning('jdc', 'JDC Challenge')}
+    ${typ('catch40').length ? `<section class="card"><h2>Catch 40</h2><div class="nycklar">
+      ${nyckel(fmt(summa(typ('catch40'), 'poang') / typ('catch40').length, 0), 'medel')}${nyckel(max(typ('catch40'), 'poang'), 'bästa')}
+      ${nyckel(proc(summa(typ('catch40'), 'traffar'), summa(typ('catch40'), 'rundor'), 0), 'utgångar')}${nyckel(typ('catch40').length, 'omgångar')}</div>
+      ${linje(typ('catch40').map((x) => ({ x: x.start, y: x.poang })), { dec: 0 })}</section>` : ''}
     ${typ('dubbelrunda').length ? `<section class="card"><h2>Runt dubblarna</h2><div class="nycklar">
       ${nyckel(proc(summa(typ('dubbelrunda'), 'traffar'), summa(typ('dubbelrunda'), 'pilar'), 1), 'träff')}${nyckel(typ('dubbelrunda').length, 'varv')}</div>
       ${linje(typ('dubbelrunda').map((x) => ({ x: x.start, y: (100 * x.traffar) / x.pilar })), { dec: 1, enhet: ' %' })}</section>` : ''}

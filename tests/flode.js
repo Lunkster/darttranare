@@ -1,7 +1,7 @@
 // Hela flödet mot attrappen: inloggning, X01 med bust och utgång, ogiltig poäng, Bob's 27, solocricket med ångra,
 // offline-kö, historik med ta bort och statistik. Kör: tests/attrapp.html?flode – slutar med "fel: 0".
-import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.9.2';
-import { ko, minns } from '../lib.js?v=0.9.2';
+import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.10.0';
+import { ko, minns } from '../lib.js?v=0.10.0';
 
 const ut = document.getElementById('testut');
 let fel = 0;
@@ -18,6 +18,7 @@ const knapp = (t, inom = '#app') => [...document.querySelectorAll(`${inom} butto
 async function poang(n) { for (const c of String(n)) await klick(`[data-siffra="${c}"]`); await klick('[data-siffra="ok"]'); }
 async function ga(hash) { location.hash = hash; await vanta(300); }
 window.confirm = () => true;
+window.testSvar = () => true;   // appens egen fråga (lib.js fraga) svarar ja i testet
 
 try {
   await vanta(300);
@@ -25,16 +26,21 @@ try {
   $('#epost').value = EPOST; $('#kod').value = 'fel'; $('#loginform').requestSubmit(); await vanta(200);
   kolla('fel lösenord', text('#loginmsg').includes('Fel e-post eller lösenord'));
   $('#kod').value = KOD; $('#loginform').requestSubmit(); await vanta(400);
-  kolla('startsidan hälsar', text('h1') === 'Hej, Anna!' && document.querySelectorAll('.ruta').length === 6, text('h1'));
+  kolla('startsidan hälsar', text('h1') === 'Hej, Anna!' && document.querySelectorAll('.ruta').length === 7, text('h1'));
   await klick('a.ruta[href="#/ny/x01"]'); await vanta(300);
   kolla('snabbstart öppnar X01', text('h1') === 'Spela' && $('[data-typ="x01"]').classList.contains('vald'));
   kolla('inloggad som Anna', text('#inloggad').includes('Anna'), text('#inloggad'));
   kolla('Anna förvald, Bo har konto', knapp('1 Anna') !== undefined && !knapp('Bo')?.textContent.includes('gäst'));
 
   // Ny spelare
+  kolla('gäster dolda tills man trycker Gäst', !$('#nyspelare') && knapp('+ Gäst') !== undefined);
+  await klick('#gaster');
   $('#nyspelare input').value = 'Cia'; $('#nyspelare').requestSubmit(); await vanta(300);
   kolla('ny gäst', db.spelare.some((s) => s.namn === 'Cia' && s.anvandare === null) && knapp('2 Cia gäst') !== undefined, [...document.querySelectorAll('[data-spelare]')].map((b) => b.textContent).join('|'));
   await klick(knapp('2 Cia gäst'));   // av igen
+  kolla('befintlig gäst syns under Gäst', document.querySelector('#gastval')?.textContent.includes('Cia'));
+  await klick('#gaster');
+  kolla('gäster dolda igen', !text('#spelarval').includes('Cia') && !$('#gastval'), text('#spelarval'));
 
   // X01 501, Anna mot Bo
   await klick('[data-typ="x01"]'); await klick('#app [data-inst="start"] [data-v="501"]');
@@ -72,19 +78,30 @@ try {
   await poang(41); await klick('[data-ut="3"]'); await klick('[data-dubbel="2"]'); await vanta(300);
   const x2 = db.spel.find((s) => s.typ === 'x01');
   kolla('samma leg sparas om (idempotent)', db.spel.filter((s) => s.typ === 'x01').length === 1 && x2.rundor.at(-1).pilar === 3 && x2.rundor.at(-1).pilar_dubbel === 2);
-  await klick(knapp('Till start')); await vanta(300); await ga('#/ny');
+  await klick(knapp('Spara och avsluta')); await vanta(300); await ga('#/ny');
 
   // Bob's 27 – alla miss tills det tar slut
   await klick(knapp('2 Bo'));   // bara Anna
-  await klick('[data-typ="bobs27"]'); await klick('#starta');
+  await klick('[data-typ="bobs27"]');
+  kolla("Bob's 27: fortsätt på minus är förvalt", $('[data-inst="minus"] .vald')?.dataset.v === '1');
+  await klick('[data-inst="minus"] [data-v="0"]'); await klick('#starta');
   kolla("Bob's 27 startat", text('.malvy .mal') === 'D1');
   for (let i = 0; i < 15; i++) await klick('[data-seg="M"]');
   await vanta(200);
   const b = db.spel.find((s) => s.typ === 'bobs27');
   kolla("Bob's 27 slut vid minus", b && b.pilar.length === 15 && text('h2').includes('-3 p'), text('h2'));
+  kolla('slutskärmen visar att omgången är sparad', text('#sparat').startsWith('✓ Sparat'), text('#sparat'));
+  // Ett färdigt spel ligger inte kvar som pågående när man byter sida
+  await ga('#/statistik'); await ga('#/ny');
+  kolla('färdigt spel stängs när man byter sida', !minns('pagaende') && !$('.pagaende'));
+  // Fortsätt på minus: alla miss på D1–D3 ger 27-2-4-6 = 15, sedan -1 på D4 … spelet fortsätter
+  await klick('[data-inst="minus"] [data-v="1"]'); await klick('#starta');
+  for (let i = 0; i < 15; i++) await klick('[data-seg="M"]');
+  kolla("Bob's 27 fortsätter på minus", text('.malvy .mal') === 'D6' && text('.malvy .summa').startsWith('-3 poäng'), `${text('.malvy .mal')} ${text('.malvy .summa')}`);
+  await klick('#avbryt'); await vanta(200);
 
   // Solocricket med ångra
-  await klick(knapp('Till start')); await ga('#/ny'); await klick('[data-typ="cricket"]'); await klick('#starta');
+  await ga('#/ny'); await klick('[data-typ="cricket"]'); await klick('#starta');
   for (const s of ['T20', 'T19', 'M', 'M']) await klick(`[data-seg="${s}"]`);
   kolla('cricket fyller skärmen utan scroll', ingenScroll(), `${document.documentElement.scrollHeight}/${innerHeight}`);
   await klick('#angra');
@@ -96,15 +113,28 @@ try {
   kolla('cricket-pilar har runda och nr', c.pilar[3].runda === 2 && c.pilar[3].nr === 1);
 
   // Pilar mot ett mål: singlar, dubblar och tripplar summeras
-  await klick(knapp('Till start')); await ga('#/ny'); await klick('[data-typ="scoring"]');
+  await klick(knapp('Spara och avsluta')); await ga('#/ny'); await klick('[data-typ="scoring"]');
   await klick('[data-inst="mal"] [data-v="20"]'); await klick('[data-inst="pilar"] [data-v="30"]'); await klick('#starta');
   for (const seg of ['T20', 'D20', 'S20', 'S20']) await klick(`[data-seg="${seg}"]`);
   kolla('mål: S/D/T under spelet', text('.malvy .sdt') === 'S 2 · D 1 · T 1', text('.malvy .sdt'));
   for (let i = 0; i < 26; i++) await klick('[data-seg="M"]');
   kolla('mål: S/D/T på slutskärmen', text('.resultat .sdt') === '2 singlar · 1 dubblar · 1 tripplar', text('.resultat .sdt'));
 
+  // Catch 40: antal pilar per utgång, 99 går inte på två pilar
+  await klick(knapp('Spara och avsluta')); await ga('#/ny'); await klick('[data-typ="catch40"]'); await klick('#starta');
+  kolla('Catch 40 startat på 61', text('.malvy .mal') === '61');
+  kolla('Catch 40 fyller skärmen utan scroll', ingenScroll(), `${document.documentElement.scrollHeight}/${innerHeight}`);
+  await klick('[data-catch="2"]'); await klick('[data-catch="3"]'); await klick('[data-catch="5"]'); await klick('[data-catch="0"]');
+  kolla('Catch 40: 3 + 2 + 1 + 0 poäng', text('.malvy .mal') === '65' && text('.malvy .summa').startsWith('6 poäng'), text('.malvy .summa'));
+  await klick('#angra');
+  kolla('Catch 40: ångra', text('.malvy .mal') === '64');
+  for (let i = 0; i < 37; i++) { if (text('.malvy .mal') === '99') kolla('99 går inte på 2 pilar', $('[data-catch="2"]').disabled); await klick('[data-catch="4"]'); }
+  await vanta(200);
+  const c40 = db.spel.find((s) => s.typ === 'catch40');
+  kolla('Catch 40 sparat', c40?.rundor.length === 40 && c40.rundor[0].pilar === 2 && c40.rundor[3].pilar === 4 && c40.rundor[3].checkout && text('h2').includes('43 p · 40/40 ut'), text('h2'));
+
   // Offline: spel hamnar i kön och skickas när nätet kommer tillbaka
-  await klick(knapp('Till start')); await ga('#/ny'); await klick('[data-typ="dubbelrunda"]'); await klick('#starta');
+  await klick(knapp('Spara och avsluta')); await ga('#/ny'); await klick('[data-typ="dubbelrunda"]'); await klick('#starta');
   db.offline = true;
   for (let i = 0; i < 63; i++) await klick(`[data-seg="${i % 3 === 0 ? $('[data-seg]:not([data-seg="M"])')?.dataset.seg : 'M'}"]`);
   await vanta(300);
@@ -115,11 +145,11 @@ try {
 
   // Historik och ta bort
   await ga('#/historik');
-  kolla('historiken listar Annas 5 spel – inte Bos', document.querySelectorAll('details.hrad').length === 5 && !$('[data-tabort="bo-spel-1"]'), String(document.querySelectorAll('details.hrad').length));
+  kolla('admin ser alla spel, även Bos – men kan inte ta bort det', document.querySelectorAll('details.hrad').length === 7 && $('a[href="#/leg/bo-spel-1"]') && !$('[data-tabort="bo-spel-1"]') && text('#app').includes('du är admin'), String(document.querySelectorAll('details.hrad').length));
   kolla('historik visar snitt', text('#app').includes('snitt'));
   await klick(`[data-tabort="${b.id}"]`); await vanta(300);
-  kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 4);
-  const { rpc } = await import('../lib.js?v=0.9.2');
+  kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 6);
+  const { rpc } = await import('../lib.js?v=0.10.0');
   let nekad = false; try { await rpc('ta_bort_spel', { sid: 'bo-spel-1' }); } catch { nekad = true; }
   kolla('servern nekar att ta bort Bos spel', nekad && db.spel.some((s) => s.id === 'bo-spel-1'));
   kolla('Annas spel är skapade av Anna', db.spel.filter((s) => s.id !== 'bo-spel-1').every((s) => s.skapad_av === 'u-anna'));
@@ -129,7 +159,12 @@ try {
   kolla('statistiken visar Anna som förval', $('[data-spelare].vald')?.textContent === 'Anna');
   kolla('statistiken döljer gäster', !text('#app .val').includes('Cia'), text('#app .val'));
   await klick(knapp('Bo')); await vanta(300);
-  kolla('Bos statistik utan Bos egna spel', !text('#app').includes('Pilar mot ett mål') && text('#app').includes('bara spel där du själv var med'));
+  { // Bo är inte admin: han ser bara spel han själv var med i
+    const { api } = await import('../lib.js?v=0.10.0'), fore = db.inloggad;
+    db.inloggad = 'u-bo'; const bos = await api('v_resultat?select=spel_id,spelare_id'); db.inloggad = fore;
+    kolla('vanlig spelare ser bara sina egna spel', bos.length > 0 && bos.every((r) => db.spel.find((x) => x.id === r.spel_id)?.spelare.some((p) => p.spelare_id === 2)), String(bos.length));
+  }
+  kolla('admin ser Bos statistik med Bos egna spel', text('#app').includes('Pilar mot ett mål') && !text('#app').includes('bara spel där du själv var med'));
   await klick(knapp('Anna')); await vanta(300);
   kolla('statistik X01', text('#app').includes('X01') && document.querySelectorAll('svg.diagram').length >= 2, String(document.querySelectorAll('svg.diagram').length));
   kolla('cricket-MPR 7', text('#app').includes('7,00'));
@@ -156,7 +191,7 @@ try {
   await klick('[data-ut="3"]'); await klick('[data-dubbel="1"]'); await vanta(400);
   const leg = db.spel.find((x) => x.turnering_match);
   kolla('legget sparat i turneringen', leg && leg.match_id === leg.turnering_match && leg.spelare.find((x) => x.spelare_id === 1).vinnare, motst);
-  await klick(knapp('Till Testcupen')); await vanta(500);
+  await klick(knapp('Spara och avsluta')); await vanta(500);
   kolla('tabellen räknar: Anna etta med 2 p', text('.turneringstabell tr:nth-child(2) td:first-child').includes('Anna') && text('.turneringstabell tr:nth-child(2) td:nth-child(6)') === '2', text('.turneringstabell tr:nth-child(2)'));
   kolla('matchen klar med Anna som vinnare', [...document.querySelectorAll('.matchrad.klar')].some((r) => ['1–0', '0–1'].includes(r.querySelector('.res').textContent) && r.querySelector('.vann')?.textContent === 'Anna'));
   // Klicka sig vidare: resultat → match → leg → spelare → turnering
@@ -192,7 +227,7 @@ try {
     if (set === 1) kolla('Anna vann setet', text('h1') === 'Anna vann setet!' && !!knapp('Nästa set'), text('h1'));
   }
   kolla('Anna vann matchen 2–0 i set', text('h1') === 'Anna vann matchen!' && text('.stallning').includes('2'), text('h1') + ' ' + text('.stallning'));
-  await klick(knapp('Till Annas och Bos serie')); await vanta(500);
+  await klick(knapp('Spara och avsluta')); await vanta(500);
   kolla('löpande: ställning 1–0 och nästa match', text('.lopstallning b') === '1–0' && text('#app').includes('Match 2 av 10') && text('#app').includes('1 av 10 matcher') && [...document.querySelectorAll('.matchrad.klar .res')].some((r) => r.textContent === '2–0'), text('.lopstallning') + ' | ' + text('#app').slice(0, 200));
 
   // Spel på distans: Anna och Bo på var sin telefon. Bo:s telefon spelas genom att ändra attrappens live_match.
