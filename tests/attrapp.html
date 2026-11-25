@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Darttränaren – attrapp</title>
-  <link rel="stylesheet" href="../style.css?v=0.10.0">
+  <title>Pilgrym – attrapp</title>
+  <link rel="stylesheet" href="../style.css?v=0.10.1">
   <style>#testut{position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow:auto;background:#000d;color:#eee;font:12px monospace;padding:8px;margin:0;z-index:99;white-space:pre-wrap}#testut:empty{display:none}.ok{color:#5c5}.fel{color:#f66;font-weight:700}</style>
 </head>
 <body>
   <!-- Samma sida som index.html, men Supabase ersätts av en attrapp i minnet. ?flode kör hela testflödet. -->
   <header class="topbar">
-    <a href="#/" class="brand"><img src="../ikon.svg?v=0.10.0" alt="" class="logo"><span>Dart (attrapp)</span></a>
+    <a href="#/" class="brand"><img src="../ikon.svg?v=0.10.1" alt="" class="logo"><span>Dart (attrapp)</span></a>
     <nav class="tabs"><a href="#/" data-route="hem">Hem</a><a href="#/turneringar" data-route="turneringar">Turneringar</a><a href="#/historik" data-route="historik">Historik</a><a href="#/statistik" data-route="statistik">Statistik</a><a href="#/jag" data-route="jag" class="tab-ikon" id="minsida" aria-label="Min sida" title="Min sida"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></a><a href="#/nyheter" data-route="nyheter" class="tab-ikon" id="info" aria-label="Nytt i appen" title="Nytt i appen"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/></svg></a></nav>
   </header>
   <main id="app"><p class="muted center">Laddar …</p></main>
@@ -18,9 +18,9 @@
   <pre id="testut"></pre>
   <script type="module">
     if (new URLSearchParams(location.search).has('flode')) { localStorage.clear(); location.hash = '#/'; }
-    await import('./attrapp.js?v=0.10.0');
-    await import('../app.js?v=0.10.0');
-    if (new URLSearchParams(location.search).has('flode')) await import('./flode.js?v=0.10.0');
+    await import('./attrapp.js?v=0.10.1');
+    await import('../app.js?v=0.10.1');
+    if (new URLSearchParams(location.search).has('flode')) await import('./flode.js?v=0.10.1');
   </script>
 </body>
 </html>

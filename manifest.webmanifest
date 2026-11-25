@@ -1,8 +1,8 @@
 {
   "id": "/darttranare/",
-  "name": "Darttränaren",
-  "short_name": "Dart",
-  "description": "Dartträning: X01, cricket och övningar med statistik",
+  "name": "Pilgrym",
+  "short_name": "Pilgrym",
+  "description": "Pilgrym – dartträning: X01, cricket och övningar med statistik",
   "lang": "sv",
   "start_url": "./#/",
   "scope": "./",

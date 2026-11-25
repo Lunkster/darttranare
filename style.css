@@ -337,3 +337,7 @@ dialog.appdialog p { font-size: 17px; margin: 14px 0 18px; }
 .dialogknappar { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 .dialogknappar .btn { min-height: 48px; flex: 1 1 auto; }
 .dialogknappar .btn.fara { background: var(--rod); border-color: var(--rod); color: #fff; }
+
+/* Appens namn på inloggningen – rubriken med namnet döljs på små skärmar */
+.appnamn { display: flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 800; margin: 0 0 6px; }
+.appnamn img { width: 40px; height: 40px; }

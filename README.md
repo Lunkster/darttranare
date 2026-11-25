@@ -1,6 +1,6 @@
-# Darttränaren
+# Pilgrym (Darttränaren)
 
-Egen träningsapp för dart som ersätter My Dart Training, med synk mellan telefon och iPad. X01, cricket och övningar, med statistik.
+Appen heter **Pilgrym** (pil + grym, beslut Henrik 2026-11-25); projektet och repot heter fortfarande Darttränaren / `darttranare`. Egen träningsapp för dart som ersätter My Dart Training, med synk mellan telefon och iPad. X01, cricket och övningar, med statistik.
 
 - **App:** https://lunkster.github.io/darttranare/ – statisk webbapp (PWA) på GitHub Pages, inga beroenden, fungerar offline
 - **Databas:** schemat `dart` i Supabase-projektet `tht` (eu-north-1, ref `nlvgisjssbjethumvgdz`) – helt åtskilt från golfens och skyttets tabeller

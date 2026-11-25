@@ -1,7 +1,7 @@
 // Hela flödet mot attrappen: inloggning, X01 med bust och utgång, ogiltig poäng, Bob's 27, solocricket med ångra,
 // offline-kö, historik med ta bort och statistik. Kör: tests/attrapp.html?flode – slutar med "fel: 0".
-import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.10.0';
-import { ko, minns } from '../lib.js?v=0.10.0';
+import { db, KOD, EPOST, klubb } from './attrapp.js?v=0.10.1';
+import { ko, minns } from '../lib.js?v=0.10.1';
 
 const ut = document.getElementById('testut');
 let fel = 0;
@@ -149,7 +149,7 @@ try {
   kolla('historik visar snitt', text('#app').includes('snitt'));
   await klick(`[data-tabort="${b.id}"]`); await vanta(300);
   kolla('ta bort eget spel', !db.spel.some((s) => s.id === b.id) && document.querySelectorAll('details.hrad').length === 6);
-  const { rpc } = await import('../lib.js?v=0.10.0');
+  const { rpc } = await import('../lib.js?v=0.10.1');
   let nekad = false; try { await rpc('ta_bort_spel', { sid: 'bo-spel-1' }); } catch { nekad = true; }
   kolla('servern nekar att ta bort Bos spel', nekad && db.spel.some((s) => s.id === 'bo-spel-1'));
   kolla('Annas spel är skapade av Anna', db.spel.filter((s) => s.id !== 'bo-spel-1').every((s) => s.skapad_av === 'u-anna'));
@@ -160,7 +160,7 @@ try {
   kolla('statistiken döljer gäster', !text('#app .val').includes('Cia'), text('#app .val'));
   await klick(knapp('Bo')); await vanta(300);
   { // Bo är inte admin: han ser bara spel han själv var med i
-    const { api } = await import('../lib.js?v=0.10.0'), fore = db.inloggad;
+    const { api } = await import('../lib.js?v=0.10.1'), fore = db.inloggad;
     db.inloggad = 'u-bo'; const bos = await api('v_resultat?select=spel_id,spelare_id'); db.inloggad = fore;
     kolla('vanlig spelare ser bara sina egna spel', bos.length > 0 && bos.every((r) => db.spel.find((x) => x.id === r.spel_id)?.spelare.some((p) => p.spelare_id === 2)), String(bos.length));
   }

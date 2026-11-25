@@ -1,13 +1,13 @@
 // Router, inloggning, spelarlistan och offlinekön.
-import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.10.0';
-import { renderStart, renderSpel, stangFardigt } from './spela.js?v=0.10.0';
-import { renderHistorik } from './historik.js?v=0.10.0';
-import { renderStatistik } from './statistik.js?v=0.10.0';
-import { renderJag } from './jag.js?v=0.10.0';
-import { renderNyheter, markeraOsedda } from './nyheter.js?v=0.10.0';
-import { renderHem } from './hem.js?v=0.10.0';
-import { renderTurneringar, renderTurnering, renderNyTurnering } from './turnering.js?v=0.10.0';
-import { renderMatch, renderLeg } from './sidor.js?v=0.10.0';
+import { api, login, logout, isLoggedIn, esc, minns, ko, skickaKo, jag } from './lib.js?v=0.10.1';
+import { renderStart, renderSpel, stangFardigt } from './spela.js?v=0.10.1';
+import { renderHistorik } from './historik.js?v=0.10.1';
+import { renderStatistik } from './statistik.js?v=0.10.1';
+import { renderJag } from './jag.js?v=0.10.1';
+import { renderNyheter, markeraOsedda } from './nyheter.js?v=0.10.1';
+import { renderHem } from './hem.js?v=0.10.1';
+import { renderTurneringar, renderTurnering, renderNyTurnering } from './turnering.js?v=0.10.1';
+import { renderMatch, renderLeg } from './sidor.js?v=0.10.1';
 
 const app = document.getElementById('app');
 
@@ -73,6 +73,7 @@ function renderLogin(msg = '') {
   document.querySelectorAll('.tabs a').forEach((a) => a.classList.remove('active'));
   app.innerHTML = `
     <form class="card login" id="loginform">
+      <p class="appnamn"><img src="ikon.svg?v=0.10.1" alt="" aria-hidden="true">Pilgrym</p>
       <h1>Logga in</h1>
       <p class="muted">Med ditt eget konto. Konton delas ut av Henrik.</p>
       <label for="epost">E-post</label>

@@ -141,13 +141,13 @@ export const uuid = () => (crypto.randomUUID ? crypto.randomUUID()
 
 // Egen fråga och varning i stället för webbläsarens confirm/alert, som visar webbadressen överst (Henrik 2026-11-25).
 // Svarar med ett löfte: true = OK. Esc eller Avbryt = false. Flödestestet svarar via window.testSvar.
-export function fraga(text, { ok = 'OK', avbryt = 'Avbryt', fara = false, titel = 'Darttränaren' } = {}) {
+export function fraga(text, { ok = 'OK', avbryt = 'Avbryt', fara = false, titel = 'Pilgrym' } = {}) {
   if (window.testSvar) return Promise.resolve(window.testSvar(text));
   return new Promise((svar) => {
     const d = document.createElement('dialog');
     d.className = 'appdialog';
     d.innerHTML = `<form method="dialog">
-      <div class="dialoghuvud"><img src="${new URL('ikon.svg?v=0.10.0', import.meta.url).href}" alt="" aria-hidden="true"><span>${esc(titel)}</span></div>
+      <div class="dialoghuvud"><img src="${new URL('ikon.svg?v=0.10.1', import.meta.url).href}" alt="" aria-hidden="true"><span>${esc(titel)}</span></div>
       <p>${esc(text)}</p>
       <div class="dialogknappar">${avbryt ? `<button class="btn" value="nej">${esc(avbryt)}</button>` : ''}<button class="btn ${fara ? 'fara' : 'primar'}" value="ja" autofocus>${esc(ok)}</button></div></form>`;
     document.body.append(d);

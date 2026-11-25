@@ -1,5 +1,7 @@
 # Instruktioner för Claude – Darttränaren
 
+- Appen heter **Pilgrym** (med y, Henrik 2026-11-25) – i rubriken, manifestet och appens egna rutor. Projektet, repot, adressen och manifestets `id` heter kvar darttranare (då behöver ingen installera om).
+
 - Läs först Obsidian `Projekt/Darttränaren/Darttränaren - Projektdokument.md` (tågordning, logg) och önskelistan.
 - Följ skillen `obsidian-projekt`: logga i projektdokumentet, temporära filer i `~/Dokument/Claude/Darttranare/`, aldrig i Obsidian.
 - Databasen är schemat `dart` i Supabase-projektet `tht` (`nlvgisjssbjethumvgdz`) – rör aldrig `public` (golf), `skytte`, `film` eller `dryck`.

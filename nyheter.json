@@ -2,6 +2,7 @@
  {
   "datum": "2026-11-25",
   "punkter": [
+   "**Appen heter Pilgrym:** nytt namn i rubriken, på inloggningen och under ikonen på hemskärmen – har du den installerad behöver du inte göra något. (v0.10.1)",
    "**Gäster under Gäst:** när du väljer spelare syns bara de med konto; tryck *+ Gäst* för gästerna eller för att lägga till en ny. (v0.10.0)",
    "**Tydligare frågor:** frågor som *Avbryta spelet?* visas i appens egen ruta med loggan. (v0.10.0)",
    "**Spara och avsluta:** när omgången är klar ser du *✓ Sparat* och avslutar med *Spara och avsluta* – ett färdigt spel ligger inte kvar i bakgrunden. (v0.10.0)",
